@@ -10,6 +10,7 @@ const Task = require("./models/Task");
 
 const app = express();
 
+
 // -------------------- Middleware --------------------
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -40,10 +41,22 @@ app.use((req, res, next) => {
 });
 
 // -------------------- MongoDB Connection --------------------
+// mongoose
+//   .connect("mongodb://127.0.0.1:27017/todo")
+//   .then(() => console.log("✅ MongoDB Connected"))
+//   .catch((err) => console.error("❌ Mongo Error:", err));
+
+
+const mongoURI =
+  process.env.MONGO_URI ||
+  "mongodb+srv://manideep:manu@todocluster.h76u0nm.mongodb.net/tododb?retryWrites=true&w=majority&appName=TodoCluster";
+
 mongoose
-  .connect("mongodb://127.0.0.1:27017/todo")
+  .connect(mongoURI)
   .then(() => console.log("✅ MongoDB Connected"))
   .catch((err) => console.error("❌ Mongo Error:", err));
+
+
 
 // -------------------- Middleware --------------------
 function isAuthenticated(req, res, next) {
