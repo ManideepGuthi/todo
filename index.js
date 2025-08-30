@@ -9,7 +9,6 @@ const User = require("./models/User");
 const Task = require("./models/Task");
 
 const app = express();
-const PORT = 5000;
 
 // -------------------- Middleware --------------------
 app.use(express.urlencoded({ extended: true }));
@@ -307,6 +306,7 @@ app.get("/logout", (req, res) => {
 
 
 const PORT = process.env.PORT || 5000;
+
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
