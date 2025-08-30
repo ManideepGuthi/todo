@@ -1,0 +1,43 @@
+:root{
+  --brand-primary: #0d6efd;   /* Bootstrap primary */
+  --brand-bg-1: #f7f9fc;
+  --brand-bg-2: #eef2f7;
+  --brand-text: #1f2937;      /* slate-800 */
+}
+
+*{ box-sizing: border-box; }
+body{ font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; color: var(--brand-text); }
+
+.bg-app{
+  background: radial-gradient(1200px 600px at 10% 0%, var(--brand-bg-2), transparent),
+              radial-gradient(1200px 600px at 90% 0%, #e8f0ff, transparent),
+              linear-gradient(180deg, var(--brand-bg-1), #ffffff);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Auth card */
+.auth-card{
+  width: 100%;
+  max-width: 430px;
+  border-radius: 1rem;
+}
+
+/* Form polish */
+.form-control{
+  padding-top: .7rem; padding-bottom: .7rem;
+}
+.form-control:focus{
+  box-shadow: 0 0 0 .25rem rgba(13,110,253,.15);
+  border-color: var(--brand-primary);
+}
+
+/* Buttons */
+.btn{ border-radius: .75rem; }
+.btn-primary{
+  box-shadow: 0 6px 18px rgba(13,110,253,.16);
+}
+
+/* Utility */
+.min-vh-75{ min-height: 75vh; }

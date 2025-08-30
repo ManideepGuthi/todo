@@ -1,0 +1,15 @@
+<div class="container mt-3">
+  <% if (typeof success !== 'undefined' && success) { %>
+    <div class="alert alert-success d-flex align-items-center shadow-sm" role="alert">
+      <i class="bi bi-check-circle-fill me-2"></i>
+      <div><%= success %></div>
+    </div>
+  <% } %>
+
+  <% if (typeof error !== 'undefined' && error) { %>
+    <div class="alert alert-danger d-flex align-items-center shadow-sm" role="alert">
+      <i class="bi bi-exclamation-triangle-fill me-2"></i>
+      <div><%= error %></div>
+    </div>
+  <% } %>
+</div>

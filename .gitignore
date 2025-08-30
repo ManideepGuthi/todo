@@ -1,0 +1,37 @@
+# Node / General
+node_modules/
+dist/
+build/
+coverage/
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.DS_Store
+Thumbs.db
+.env
+.env.*.local
+*.local
+
+# IDEs
+.vscode/
+.idea/
+
+# React/Vite/Next etc (client)
+client/node_modules/
+client/build/
+client/dist/
+client/.env
+client/.env.*.local
+
+# Express/Node (server)
+server/node_modules/
+server/dist/
+server/.env
+server/.env.*.local
+
+# Misc
+.tmp/
+.cache/
