@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -134,6 +135,26 @@
       transition: var(--transition);
       position: relative;
       overflow: hidden;
+    }
+    .task-item::after {
+      content: '';
+      position: absolute;
+      top: -4px;
+      left: -4px;
+      right: -4px;
+      bottom: -4px;
+      background: linear-gradient(45deg, #a8d8ea, #a8e6cf, #f9f7d9, #ffb3ba);
+      background-size: 400% 400%;
+      border-radius: 16px;
+      z-index: -1;
+      animation: aiModalBorderMove 6s ease-in-out infinite;
+      opacity: 0.4;
+      filter: blur(8px);
+      transition: all 1s ease-in-out;
+    }
+    .task-item:hover::after {
+      opacity: 0.7;
+      filter: blur(10px);
     }
 
     .task-item::before {
@@ -273,6 +294,660 @@
         padding: 2rem;
       }
     }
+
+    /* AI Suggestions Styles */
+    .ai-suggestions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .ai-toggle-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0.5rem;
+      border-radius: 50%;
+      transition: var(--transition-fast);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      overflow: hidden;
+    }
+
+    .ai-toggle-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      border-radius: 50%;
+      background: linear-gradient(45deg, #4285f4, #34a853, #fbbc05, #ea4335);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      z-index: -1;
+    }
+
+    .ai-toggle-btn:hover {
+      transform: scale(1.05);
+    }
+
+    .ai-toggle-btn:hover::before {
+      opacity: 0.2;
+    }
+
+    .ai-toggle-btn.active {
+      background: linear-gradient(135deg, #4285f4 0%, #34a853 100%);
+      color: white;
+      box-shadow: 0 0 20px rgba(66, 133, 244, 0.4);
+    }
+
+    .ai-toggle-btn.active .ai-icon {
+      color: white;
+      animation: aiPulse 2s infinite, aiGlow 3s infinite;
+    }
+
+    .ai-toggle-btn.disabled {
+      background: var(--danger-color);
+      color: var(--text-secondary);
+    }
+
+    .ai-toggle-btn.disabled .ai-icon {
+      color: var(--text-secondary);
+    }
+
+    .ai-icon {
+      font-size: 1.2rem;
+      transition: var(--transition-fast);
+      position: relative;
+      z-index: 1;
+    }
+
+    @keyframes aiPulse {
+      0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+      50% {
+        opacity: 0.8;
+        transform: scale(1.1);
+      }
+    }
+
+    @keyframes aiGlow {
+      0%, 100% {
+        filter: drop-shadow(0 0 5px rgba(66, 133, 244, 0.5));
+      }
+      25% {
+        filter: drop-shadow(0 0 10px rgba(52, 168, 83, 0.6));
+      }
+      50% {
+        filter: drop-shadow(0 0 15px rgba(251, 188, 5, 0.7));
+      }
+      75% {
+        filter: drop-shadow(0 0 10px rgba(234, 67, 53, 0.6));
+      }
+    }
+
+    /* AI Background Effects */
+    body.ai-enabled {
+      position: relative;
+      animation: aiPageGlow 2s ease-in-out infinite alternate;
+    }
+
+    body.ai-enabled::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: radial-gradient(circle at 20% 80%, rgba(66, 133, 244, 0.03) 0%, transparent 50%),
+                  radial-gradient(circle at 80% 20%, rgba(52, 168, 83, 0.03) 0%, transparent 50%),
+                  radial-gradient(circle at 40% 40%, rgba(251, 188, 5, 0.02) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: -1;
+      animation: aiBackgroundPulse 4s infinite;
+    }
+
+    @keyframes aiPageGlow {
+      0% {
+        filter: brightness(1);
+      }
+      100% {
+        filter: brightness(1.02);
+      }
+    }
+
+    @keyframes aiBackgroundPulse {
+      0%, 100% {
+        opacity: 0.3;
+      }
+      50% {
+        opacity: 0.6;
+      }
+    }
+
+    /* AI Particles Effect */
+    .ai-particles {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: -1;
+    }
+
+    .ai-particle {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: #4285f4;
+      border-radius: 50%;
+      opacity: 0;
+      animation: aiParticleFloat 6s infinite linear;
+    }
+
+    .ai-particle:nth-child(2n) {
+      background: #34a853;
+      animation-duration: 8s;
+      animation-delay: 1s;
+    }
+
+    .ai-particle:nth-child(3n) {
+      background: #fbbc05;
+      animation-duration: 7s;
+      animation-delay: 2s;
+    }
+
+    .ai-particle:nth-child(4n) {
+      background: #ea4335;
+      animation-duration: 9s;
+      animation-delay: 3s;
+    }
+
+    @keyframes aiParticleFloat {
+      0% {
+        opacity: 0;
+        transform: translateY(100vh) rotate(0deg);
+      }
+      10% {
+        opacity: 0.6;
+      }
+      90% {
+        opacity: 0.6;
+      }
+      100% {
+        opacity: 0;
+        transform: translateY(-100px) rotate(360deg);
+      }
+    }
+
+    /* AI Suggestions Animations */
+    .suggestions-dropdown.show {
+      animation: aiDropdownSlideIn 0.3s ease-out;
+    }
+
+    .suggestion-item {
+      animation: aiSuggestionFadeIn 0.4s ease-out forwards;
+      opacity: 0;
+      transform: translateY(10px);
+    }
+
+    .suggestion-item:nth-child(1) { animation-delay: 0.1s; }
+    .suggestion-item:nth-child(2) { animation-delay: 0.2s; }
+    .suggestion-item:nth-child(3) { animation-delay: 0.3s; }
+    .suggestion-item:nth-child(4) { animation-delay: 0.4s; }
+    .suggestion-item:nth-child(5) { animation-delay: 0.5s; }
+
+    @keyframes aiDropdownSlideIn {
+      0% {
+        opacity: 0;
+        transform: translateY(-10px) scale(0.95);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @keyframes aiSuggestionFadeIn {
+      0% {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* AI Page Animations */
+    body.ai-enabled .card {
+      animation: aiCardGlow 3s ease-in-out infinite alternate;
+    }
+
+    body.ai-enabled .task-item {
+      animation: aiTaskFloat 4s ease-in-out infinite alternate;
+    }
+
+    /* AI Modal Glow */
+    body.ai-enabled .material-modal {
+      position: relative;
+      animation: aiModalGlow 2s ease-in-out infinite alternate;
+    }
+
+    body.ai-enabled .material-modal::before {
+      content: '';
+      position: absolute;
+      top: -4px;
+      left: -4px;
+      right: -4px;
+      bottom: -4px;
+      background: linear-gradient(45deg, #4285f4, #34a853, #fbbc05, #ea4335);
+      background-size: 400% 400%;
+      border-radius: 32px;
+      z-index: -1;
+      animation: aiModalBorderMove 3s ease-in-out infinite;
+      opacity: 0.8;
+      filter: blur(8px);
+    }
+
+    @keyframes aiCardGlow {
+      0% {
+        box-shadow: var(--shadow-sm);
+      }
+      100% {
+        box-shadow: 0 4px 20px rgba(66, 133, 244, 0.1), 0 2px 8px rgba(52, 168, 83, 0.05);
+      }
+    }
+
+    @keyframes aiTaskFloat {
+      0% {
+        transform: translateY(0);
+      }
+      100% {
+        transform: translateY(-2px);
+      }
+    }
+
+    @keyframes aiModalGlow {
+      0% {
+        filter: brightness(1);
+      }
+      100% {
+        filter: brightness(1.05);
+      }
+    }
+
+    @keyframes aiModalBorderMove {
+      0% {
+        background-position: 0% 50%;
+      }
+      50% {
+        background-position: 100% 50%;
+      }
+      100% {
+        background-position: 0% 50%;
+      }
+    }
+
+    .ai-tooltip {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      background: var(--card-bg);
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      border: 1px solid var(--border-color);
+      opacity: 0;
+      transform: translateY(-5px);
+      transition: var(--transition-fast);
+      pointer-events: none;
+      position: absolute;
+      top: -35px;
+      right: 0;
+      white-space: nowrap;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .ai-suggestions:hover .ai-tooltip {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .ai-status-indicator {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success-color);
+      border: 2px solid white;
+      box-shadow: 0 0 0 1px var(--border-color);
+    }
+
+    .ai-toggle-btn.disabled .ai-status-indicator {
+      background: var(--danger-color);
+    }
+
+    .suggestions-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow-lg);
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 1000;
+      display: none;
+    }
+
+    .suggestions-dropdown.show {
+      display: block;
+    }
+
+    .suggestion-item {
+      padding: 0.75rem 1rem;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border-color);
+      transition: var(--transition-fast);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .suggestion-item:last-child {
+      border-bottom: none;
+    }
+
+    .suggestion-item:hover,
+    .suggestion-item.active {
+      background: var(--primary-light);
+      color: var(--primary-color);
+    }
+
+    .suggestion-item .suggestion-icon {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+
+    .suggestion-item .suggestion-text {
+      flex-grow: 1;
+    }
+
+    .suggestion-item .suggestion-type {
+      font-size: 0.7rem;
+      color: var(--text-secondary);
+      background: var(--background-color);
+      padding: 0.2rem 0.4rem;
+      border-radius: 3px;
+    }
+
+    .suggestion-content {
+      width: 100%;
+    }
+
+    .suggestion-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .suggestion-description {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.25rem;
+      line-height: 1.3;
+    }
+
+    .suggestion-tags {
+      display: flex;
+      gap: 0.25rem;
+      flex-wrap: wrap;
+    }
+
+    .suggestion-tags .tag-pill {
+      font-size: 0.7rem;
+      padding: 0.15rem 0.4rem;
+      margin: 0;
+    }
+
+    .position-relative {
+      position: relative;
+    }
+
+
+
+    /* Pastel color schemes for task sections */
+    .pending-card {
+      background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+      border: 1px solid #90caf9;
+    }
+    .completed-card {
+      background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%);
+      border: 1px solid #81c784;
+    }
+    .shared-card {
+      background: linear-gradient(135deg, #fce4ec 0%, #f8bbd9 100%);
+      border: 1px solid #f48fb1;
+    }
+
+    /* Google Material 3 Expressive Styles for Modals */
+    .material-modal {
+      border-radius: 28px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.08);
+      border: none;
+      background: linear-gradient(135deg, #ffffff 0%, #fafafa 100%);
+    }
+
+    .material-header {
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+      padding: 24px 32px;
+      border-radius: 28px 28px 0 0;
+    }
+
+    .material-title {
+      font-family: 'Google Sans', 'Roboto', sans-serif;
+      font-weight: 500;
+      font-size: 1.5rem;
+      color: #202124;
+      letter-spacing: 0.01em;
+    }
+
+    .material-close {
+      background: none;
+      border: none;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      color: #5f6368;
+    }
+
+    .material-close:hover {
+      background: rgba(95, 99, 104, 0.1);
+      transform: scale(1.1);
+    }
+
+    .material-body {
+      padding: 32px;
+      background: #ffffff;
+    }
+
+    .material-label {
+      font-family: 'Google Sans', 'Roboto', sans-serif;
+      font-weight: 500;
+      font-size: 0.875rem;
+      color: #202124;
+      margin-bottom: 8px;
+      letter-spacing: 0.01em;
+    }
+
+    .material-input, .material-textarea, .material-select {
+      border: 1px solid rgba(0, 0, 0, 0.12);
+      border-radius: 16px;
+      padding: 16px 20px;
+      font-family: 'Google Sans', 'Roboto', sans-serif;
+      font-size: 1rem;
+      color: #202124;
+      background: #ffffff;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.08);
+      position: relative;
+    }
+
+    .material-input::after {
+      content: '';
+      position: absolute;
+      top: -4px;
+      left: -4px;
+      right: -4px;
+      bottom: -4px;
+      background: linear-gradient(45deg, #a8d8ea, #a8e6cf, #f9f7d9, #ffb3ba);
+      background-size: 400% 400%;
+      border-radius: 20px;
+      z-index: -1;
+      animation: aiModalBorderMove 6s ease-in-out infinite;
+      opacity: 0;
+      filter: blur(8px);
+      transition: all 1s ease-in-out;
+    }
+
+    .material-input:focus::after {
+      opacity: 0.7;
+      filter: blur(10px);
+    }
+
+    .material-input:focus, .material-textarea:focus, .material-select:focus {
+      border-color: #4285f4;
+      box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.1), inset 0 1px 3px rgba(0, 0, 0, 0.08);
+      outline: none;
+    }
+
+    .material-textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .material-select {
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+      background-position: right 0.75rem center;
+      background-repeat: no-repeat;
+      background-size: 1rem;
+      padding-right: 2.5rem;
+    }
+
+    .material-footer {
+      background: #f8f9fa;
+      border-top: 1px solid rgba(0, 0, 0, 0.08);
+      padding: 24px 32px;
+      border-radius: 0 0 28px 28px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+
+    .material-btn-primary {
+      background: linear-gradient(135deg, #4285f4 0%, #1a73e8 100%);
+      border: none;
+      border-radius: 20px;
+      padding: 12px 24px;
+      font-family: 'Google Sans', 'Roboto', sans-serif;
+      font-weight: 500;
+      font-size: 0.875rem;
+      color: #ffffff;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 2px 8px rgba(66, 133, 244, 0.3);
+      text-transform: none;
+      letter-spacing: 0.01em;
+    }
+
+    .material-btn-primary:hover {
+      background: linear-gradient(135deg, #3367d6 0%, #1557b0 100%);
+      box-shadow: 0 4px 12px rgba(66, 133, 244, 0.4);
+      transform: translateY(-1px);
+    }
+
+    .material-btn-secondary {
+      background: #ffffff;
+      border: 1px solid rgba(0, 0, 0, 0.12);
+      border-radius: 20px;
+      padding: 12px 24px;
+      font-family: 'Google Sans', 'Roboto', sans-serif;
+      font-weight: 500;
+      font-size: 0.875rem;
+      color: #202124;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+
+    .material-btn-secondary:hover {
+      background: #f8f9fa;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+      transform: translateY(-1px);
+    }
+
+    .material-btn-warning {
+      background: linear-gradient(135deg, #fbbc05 0%, #f9ab00 100%);
+      border: none;
+      border-radius: 20px;
+      padding: 12px 24px;
+      font-family: 'Google Sans', 'Roboto', sans-serif;
+      font-weight: 500;
+      font-size: 0.875rem;
+      color: #202124;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 2px 8px rgba(251, 188, 5, 0.3);
+      text-transform: none;
+      letter-spacing: 0.01em;
+    }
+
+    .material-btn-warning:hover {
+      background: linear-gradient(135deg, #f57c00 0%, #ef6c00 100%);
+      box-shadow: 0 4px 12px rgba(251, 188, 5, 0.4);
+      transform: translateY(-1px);
+    }
+
+    /* Responsive adjustments for Material modals */
+    @media (max-width: 576px) {
+      .material-modal {
+        margin: 16px;
+        border-radius: 20px;
+      }
+
+      .material-header, .material-body, .material-footer {
+        padding: 20px;
+      }
+
+      .material-title {
+        font-size: 1.25rem;
+      }
+
+      .material-input, .material-textarea, .material-select {
+        padding: 14px 16px;
+        font-size: 0.875rem;
+      }
+
+      .material-btn-primary, .material-btn-secondary, .material-btn-warning {
+        padding: 10px 20px;
+        font-size: 0.8125rem;
+      }
+    }
   </style>
 </head>
 <body>
@@ -313,50 +988,76 @@
   </nav>
 
   <div class="container-fluid main-container">
-    <div class="row">
-
-      <div class="col-lg-4 mb-4">
-        <div class="card h-100">
-          <div class="card-header">
-            Add a New Task
+    <!-- Add Task Section at Top -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header d-flex align-items-center">
+            <span>Add a New Task</span>
+            <div class="ai-suggestions ms-auto">
+              <button class="ai-toggle-btn active" id="aiToggleBtn" title="Toggle AI Suggestions">
+                <i class="fas fa-brain ai-icon" id="aiIcon"></i>
+                <div class="ai-status-indicator"></div>
+              </button>
+              <span class="ai-tooltip" id="aiTooltip">AI Suggestions Active</span>
+            </div>
           </div>
           <div class="card-body">
-            <h6 class="card-subtitle mb-3 text-muted">Normal Task</h6>
-            <form action="/tasks/add" method="POST" class="d-grid gap-3 mb-4">
-              <input type="text" name="title" class="form-control" placeholder="Task title..." required>
-              <textarea name="description" class="form-control" rows="3" placeholder="Task description..."></textarea>
-              <input type="text" name="tags" class="form-control" placeholder="Tags (e.g., work, personal)">
-              <select name="priority" class="form-select">
-                <option value="Medium">Medium Priority</option>
-                <option value="High">High Priority</option>
-                <option value="Low">Low Priority</option>
-              </select>
-              <button type="submit" class="btn btn-primary btn-block">
-                <i class="fas fa-plus"></i> Add Normal Task
+            <div class="d-grid gap-3">
+              <button type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#normalTaskModal">
+                <i class="fas fa-plus me-2"></i> Add Task
               </button>
-            </form>
-            <h6 class="card-subtitle mb-3 text-muted">Task with Deadline</h6>
-            <form action="/tasks/add-deadline" method="POST" class="d-grid gap-3" enctype="multipart/form-data">
-              <input type="text" name="title" class="form-control" placeholder="Task title..." required>
-              <textarea name="description" class="form-control" rows="3" placeholder="Task description..."></textarea>
-              <input type="text" name="tags" class="form-control" placeholder="Tags (e.g., work, personal)">
-              <select name="priority" class="form-select">
-                <option value="Medium">Medium Priority</option>
-                <option value="High">High Priority</option>
-                <option value="Low">Low Priority</option>
-              </select>
-              <input type="datetime-local" name="deadline" class="form-control" required>
-              <label for="attachment" class="form-label mt-2">Optional Attachment:</label>
-              <input type="file" name="attachment" id="attachment" class="form-control">
-              <button type="submit" class="btn btn-warning btn-block">
-                <i class="fas fa-clock"></i> Add Deadline Task
-              </button>
-            </form>
+            </div>
           </div>
         </div>
       </div>
+    </div>
 
-      <div class="col-lg-8">
+    <!-- Task Counts Section -->
+    <div class="row mb-4 text-center">
+      <%
+        const totalTasks = tasks.length;
+        const completedTasks = tasks.filter(task => task.status === 'completed').length;
+        const pendingTasks = totalTasks - completedTasks;
+      %>
+      <div class="col-md-4 mb-3">
+        <div class="card p-2" style="border: 1px solid var(--success-color); background: rgba(232, 245, 232, 0.3);">
+          <div class="d-flex align-items-center justify-content-center">
+            <i class="fas fa-check-circle me-2" style="color: var(--success-color); font-size: 1.2rem;"></i>
+            <div>
+              <h5 class="mb-0 fw-bold" style="color: var(--success-color);"><%= completedTasks %></h5>
+              <small class="text-muted">Completed</small>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4 mb-3">
+        <div class="card p-2" style="border: 1px solid var(--warning-color); background: rgba(255, 249, 196, 0.3);">
+          <div class="d-flex align-items-center justify-content-center">
+            <i class="fas fa-clock me-2" style="color: var(--warning-color); font-size: 1.2rem;"></i>
+            <div>
+              <h5 class="mb-0 fw-bold" style="color: var(--warning-color);"><%= pendingTasks %></h5>
+              <small class="text-muted">Pending</small>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4 mb-3">
+        <div class="card p-2" style="border: 1px solid var(--primary-color); background: rgba(232, 242, 255, 0.3);">
+          <div class="d-flex align-items-center justify-content-center">
+            <i class="fas fa-list me-2" style="color: var(--primary-color); font-size: 1.2rem;"></i>
+            <div>
+              <h5 class="mb-0 fw-bold" style="color: var(--primary-color);"><%= totalTasks %></h5>
+              <small class="text-muted">Total</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tasks Section Side by Side -->
+    <div class="row justify-content-center">
+      <div class="col-md-6">
         <div class="card mb-4">
           <div class="card-header">
             All Your Tasks
@@ -496,8 +1197,10 @@
             <% } %>
           </div>
         </div>
+      </div>
 
-        <div class="card mt-4">
+      <div class="col-md-6">
+        <div class="card mb-4">
           <div class="card-header">
             Shared Tasks You've Sent
           </div>
@@ -597,10 +1300,70 @@
             <% } %>
           </div>
         </div>
-
       </div>
     </div>
   </div>
+
+  <!-- Normal Task Modal -->
+  <div class="modal fade" id="normalTaskModal" tabindex="-1" aria-labelledby="normalTaskModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content material-modal">
+        <div class="modal-header material-header">
+          <h5 class="modal-title material-title" id="normalTaskModalLabel">
+            <i class="fas fa-plus me-2"></i>Add Task
+          </h5>
+          <button type="button" class="btn-close material-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form action="/tasks/add-deadline" method="POST" enctype="multipart/form-data">
+          <div class="modal-body material-body">
+            <div class="position-relative">
+              <label class="form-label material-label">Task Title</label>
+              <div class="d-flex gap-2">
+                <input type="text" name="title" id="modalTaskTitle" class="form-control material-input" placeholder="Task title..." required autocomplete="off">
+              </div>
+            <div id="modalSuggestionsDropdown" class="suggestions-dropdown">
+              <!-- AI suggestions will appear here -->
+            </div>
+          </div>
+            <div>
+              <label class="form-label material-label">Description</label>
+              <textarea name="description" class="form-control material-textarea" rows="3" placeholder="Task description..."></textarea>
+            </div>
+            <div>
+              <label class="form-label material-label">Tags</label>
+              <input type="text" name="tags" class="form-control material-input" placeholder="Tags (e.g., work, personal)">
+            </div>
+            <div>
+              <label class="form-label material-label">Priority</label>
+              <select name="priority" class="form-select material-select">
+                <option value="Medium">Medium Priority</option>
+                <option value="High">High Priority</option>
+                <option value="Low">Low Priority</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label material-label">Deadline (Optional)</label>
+              <input type="datetime-local" name="deadline" class="form-control material-input">
+            </div>
+            <div>
+              <label for="modalAttachment" class="form-label material-label">Optional Attachment</label>
+              <input type="file" name="attachment" id="modalAttachment" class="form-control material-input">
+            </div>
+          </div>
+          <div class="modal-footer material-footer">
+            <button type="button" class="btn material-btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn material-btn-primary">
+              <i class="fas fa-plus me-1"></i>Add Task
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+
+
+  <%- include('./partials/footer.ejs') %>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script>
@@ -692,6 +1455,124 @@
           }, 300);
         });
       }
+
+      // AI Suggestions functionality
+      const taskTitleInput = document.getElementById('modalTaskTitle');
+      const suggestionsDropdown = document.getElementById('modalSuggestionsDropdown');
+      const aiIcon = document.getElementById('aiIcon');
+      const aiToggleBtn = document.getElementById('aiToggleBtn');
+      const aiTooltip = document.getElementById('aiTooltip');
+      const normalTaskModal = document.getElementById('normalTaskModal');
+      let suggestionTimeout;
+      let aiEnabled = true; // Default to enabled
+
+      // AI Toggle functionality
+      aiToggleBtn.addEventListener('click', function() {
+        aiEnabled = !aiEnabled;
+        if (aiEnabled) {
+          this.classList.add('active');
+          this.classList.remove('disabled');
+          aiTooltip.textContent = 'AI Suggestions Active';
+          document.body.classList.add('ai-enabled');
+        } else {
+          this.classList.remove('active');
+          this.classList.add('disabled');
+          aiTooltip.textContent = 'AI Suggestions Disabled';
+          suggestionsDropdown.classList.remove('show');
+          document.body.classList.remove('ai-enabled');
+        }
+      });
+
+      // Input listener for suggestions
+      taskTitleInput.addEventListener('input', function() {
+        clearTimeout(suggestionTimeout);
+        if (!aiEnabled || this.value.length < 2) {
+          suggestionsDropdown.classList.remove('show');
+          return;
+        }
+        suggestionTimeout = setTimeout(() => {
+          fetchSuggestions(this.value);
+        }, 500); // Debounce
+      });
+
+      // Fetch suggestions from API
+      function fetchSuggestions(title) {
+        fetch(`/api/ai/suggestions?title=${encodeURIComponent(title)}`)
+          .then(response => response.json())
+          .then(data => {
+            displaySuggestions(data.suggestions);
+          })
+          .catch(error => {
+            console.error('Error fetching suggestions:', error);
+            suggestionsDropdown.classList.remove('show');
+          });
+      }
+
+      // Display suggestions in dropdown
+      function displaySuggestions(suggestions) {
+        suggestionsDropdown.innerHTML = '';
+        if (suggestions.length === 0) {
+          suggestionsDropdown.classList.remove('show');
+          return;
+        }
+        suggestions.forEach(suggestion => {
+          const item = document.createElement('div');
+          item.className = 'suggestion-item';
+          item.innerHTML = `
+            <div class="suggestion-content">
+              <div class="suggestion-header">
+                <i class="fas fa-lightbulb suggestion-icon"></i>
+                <span class="suggestion-text">${suggestion.title}</span>
+                <span class="suggestion-type">${suggestion.priority}</span>
+              </div>
+              ${suggestion.description ? `<div class="suggestion-description">${suggestion.description}</div>` : ''}
+              ${suggestion.tags && suggestion.tags.length > 0 ? `<div class="suggestion-tags">${suggestion.tags.map(tag => `<span class="tag-pill">${tag}</span>`).join('')}</div>` : ''}
+            </div>
+          `;
+          item.addEventListener('click', () => {
+            fillForm(suggestion);
+            suggestionsDropdown.classList.remove('show');
+          });
+          suggestionsDropdown.appendChild(item);
+        });
+        suggestionsDropdown.classList.add('show');
+      }
+
+      // Fill form with selected suggestion
+      function fillForm(suggestion) {
+        taskTitleInput.value = suggestion.title;
+        const descriptionTextarea = normalTaskModal.querySelector('textarea[name="description"]');
+        if (descriptionTextarea && suggestion.description) {
+          descriptionTextarea.value = suggestion.description;
+        }
+        const tagsInput = normalTaskModal.querySelector('input[name="tags"]');
+        if (tagsInput && suggestion.tags) {
+          tagsInput.value = suggestion.tags.join(', ');
+        }
+        const prioritySelect = normalTaskModal.querySelector('select[name="priority"]');
+        if (prioritySelect && suggestion.priority) {
+          prioritySelect.value = suggestion.priority;
+        }
+      }
+
+      // Close dropdown when modal is hidden
+      normalTaskModal.addEventListener('hidden.bs.modal', function() {
+        suggestionsDropdown.classList.remove('show');
+      });
+
+      // Close dropdown when clicking outside
+      document.addEventListener('click', function(e) {
+        if (!suggestionsDropdown.contains(e.target) && !taskTitleInput.contains(e.target)) {
+          suggestionsDropdown.classList.remove('show');
+        }
+      });
+
+      // Initialize AI state
+      if (aiEnabled) {
+        aiToggleBtn.classList.add('active');
+        document.body.classList.add('ai-enabled');
+      }
+
     });
   </script>
 </body>

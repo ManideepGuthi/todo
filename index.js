@@ -13,6 +13,7 @@ const Task = require("./models/Task");
 const Room = require("./models/Room");
 const Message = require("./models/Message");
 const SharedTask = require("./models/SharedTask");
+const { analyzeTaskPriority, extractKeywords, searchTasks, generateAISuggestions, generateAIDescription, generateAllFromTitle } = require("./ai-service");
 
 const app = express();
 const server = http.createServer(app);
@@ -183,14 +184,31 @@ app.get("/dashboard", isAuthenticated, async (req, res) => {
 // Add normal task
 app.post("/tasks/add", isAuthenticated, async (req, res) => {
   try {
-    const { title, description, tags, priority, room } = req.body;
+    let { title, description, tags, priority, room } = req.body;
     const taskTags = tags ? tags.split(",").map((t) => t.trim()) : [];
+
+    // Use AI service to generate description if not provided
+    if (!description || description.trim() === '') {
+      description = generateAIDescription(title);
+    }
+
+    // Use AI service to analyze priority if not provided or set to default
+    let analyzedPriority = priority;
+    if (!priority || priority === 'Low') {
+      analyzedPriority = analyzeTaskPriority(title, description);
+    }
+
+    // Use AI service to extract keywords for tags if no tags provided
+    let finalTags = taskTags;
+    if (taskTags.length === 0) {
+      finalTags = extractKeywords(title + ' ' + description);
+    }
 
     await Task.create({
       title,
       description,
-      tags: taskTags,
-      priority,
+      tags: finalTags,
+      priority: analyzedPriority,
       user: req.session.user.id,
       status: "pending",
       room: room || null, // Assign the room ID if provided
@@ -210,8 +228,25 @@ app.post(
   upload.single("attachment"),
   async (req, res) => {
     try {
-      const { title, description, tags, priority, deadline, room } = req.body;
+      let { title, description, tags, priority, deadline, room } = req.body;
       const taskTags = tags ? tags.split(",").map((t) => t.trim()) : [];
+
+      // Use AI service to generate description if not provided
+      if (!description || description.trim() === '') {
+        description = generateAIDescription(title);
+      }
+
+      // Use AI service to analyze priority if not provided or set to default
+      let analyzedPriority = priority;
+      if (!priority || priority === 'Low') {
+        analyzedPriority = analyzeTaskPriority(title, description);
+      }
+
+      // Use AI service to extract keywords for tags if no tags provided
+      let finalTags = taskTags;
+      if (taskTags.length === 0) {
+        finalTags = extractKeywords(title + ' ' + description);
+      }
 
       let attachment = null;
       if (req.file) {
@@ -225,8 +260,58 @@ app.post(
       await Task.create({
         title,
         description,
-        tags: taskTags,
-        priority,
+        tags: finalTags,
+        priority: analyzedPriority,
+        deadline: deadline ? new Date(deadline) : null,
+        attachment,
+        user: req.session.user.id,
+        status: "pending",
+        room: room || null, // Assign the room ID if provided
+      });
+
+      res.redirect("/dashboard");
+    } catch (err) {
+      console.error(err);
+      res.send("Error adding deadline task");
+    }
+  }
+);
+// Add deadline task
+app.post(
+  "/tasks/add-deadline",
+  isAuthenticated,
+  upload.single("attachment"),
+  async (req, res) => {
+    try {
+      const { title, description, tags, priority, deadline, room } = req.body;
+      const taskTags = tags ? tags.split(",").map((t) => t.trim()) : [];
+
+      // Use AI service to analyze priority if not provided or set to default
+      let analyzedPriority = priority;
+      if (!priority || priority === 'Low') {
+        analyzedPriority = analyzeTaskPriority(title, description);
+      }
+
+      // Use AI service to extract keywords for tags if no tags provided
+      let finalTags = taskTags;
+      if (taskTags.length === 0) {
+        finalTags = extractKeywords(title + ' ' + description);
+      }
+
+      let attachment = null;
+      if (req.file) {
+        attachment = {
+          fileName: req.file.originalname,
+          filePath: `/uploads/${req.file.filename}`,
+          mimetype: req.file.mimetype,
+        };
+      }
+
+      await Task.create({
+        title,
+        description,
+        tags: finalTags,
+        priority: analyzedPriority,
         deadline: deadline ? new Date(deadline) : null,
         attachment,
         user: req.session.user.id,
@@ -507,6 +592,132 @@ app.post("/profile/upload-photo", isAuthenticated, upload.single('profilePicture
 // Logout
 app.get("/logout", (req, res) => {
   req.session.destroy(() => res.redirect("/signin"));
+});
+
+// AI API routes
+app.post("/api/ai/priority", isAuthenticated, (req, res) => {
+  const { title, description } = req.body;
+  const priority = analyzeTaskPriority(title, description);
+  res.json({ priority });
+});
+
+app.post("/api/ai/tags", isAuthenticated, (req, res) => {
+  const { title, description } = req.body;
+  const tags = extractKeywords(title + ' ' + description);
+  res.json({ tags });
+});
+
+app.get("/api/ai/search", isAuthenticated, async (req, res) => {
+  const { q: query } = req.query;
+  if (!query || query.length < 2) {
+    return res.json({ suggestions: [] });
+  }
+
+  try {
+    // Get existing tasks for context
+    const existingTasks = await Task.find({ user: req.session.user.id });
+
+    // Generate AI suggestions based on user input
+    const aiSuggestions = generateAISuggestions(query, existingTasks);
+
+    // Also search existing tasks for additional context
+    const existingMatches = searchTasks(existingTasks, query);
+
+    // Combine AI-generated suggestions with existing task matches
+    const combinedSuggestions = [
+      ...aiSuggestions,
+      ...existingMatches.slice(0, 3).map(task => ({
+        title: task.title,
+        description: task.description || 'Existing task',
+        tags: task.tags || [],
+        priority: task.priority || 'Medium'
+      }))
+    ];
+
+    // Remove duplicates and limit to 5 suggestions
+    const uniqueSuggestions = combinedSuggestions
+      .filter((suggestion, index, self) =>
+        index === self.findIndex(s => s.title === suggestion.title)
+      )
+      .slice(0, 5);
+
+    res.json({ suggestions: uniqueSuggestions });
+  } catch (error) {
+    console.error('Error in AI search:', error);
+    res.status(500).json({ suggestions: [] });
+  }
+});
+
+app.get("/api/ai/description", isAuthenticated, (req, res) => {
+  const { title } = req.query;
+  if (!title || title.trim().length === 0) {
+    return res.status(400).json({ error: "Title is required" });
+  }
+
+  try {
+    const description = generateAIDescription(title.trim());
+    res.json({ description });
+  } catch (error) {
+    console.error('Error generating AI description:', error);
+    res.status(500).json({ error: "Failed to generate description" });
+  }
+});
+
+app.post("/api/ai/generate-all", isAuthenticated, (req, res) => {
+  const { title, description } = req.body;
+  if (!title || title.trim().length === 0) {
+    return res.status(400).json({ error: "Title is required" });
+  }
+
+  try {
+    const result = generateAllFromTitle(title.trim(), description || '');
+    res.json(result);
+  } catch (error) {
+    console.error('Error generating AI data:', error);
+    res.status(500).json({ error: "Failed to generate AI data" });
+  }
+});
+
+// AI suggestions endpoint for dashboard
+app.get("/api/ai/suggestions", isAuthenticated, async (req, res) => {
+  const { title } = req.query;
+  if (!title || title.length < 2) {
+    return res.json({ suggestions: [] });
+  }
+
+  try {
+    // Get existing tasks for context
+    const existingTasks = await Task.find({ user: req.session.user.id });
+
+    // Generate AI suggestions based on user input
+    const aiSuggestions = generateAISuggestions(title, existingTasks);
+
+    // Also search existing tasks for additional context
+    const existingMatches = searchTasks(existingTasks, title);
+
+    // Combine AI-generated suggestions with existing task matches
+    const combinedSuggestions = [
+      ...aiSuggestions,
+      ...existingMatches.slice(0, 3).map(task => ({
+        title: task.title,
+        description: task.description || 'Existing task',
+        tags: task.tags || [],
+        priority: task.priority || 'Medium'
+      }))
+    ];
+
+    // Remove duplicates and limit to 5 suggestions
+    const uniqueSuggestions = combinedSuggestions
+      .filter((suggestion, index, self) =>
+        index === self.findIndex(s => s.title === suggestion.title)
+      )
+      .slice(0, 5);
+
+    res.json({ suggestions: uniqueSuggestions });
+  } catch (error) {
+    console.error('Error in AI suggestions:', error);
+    res.status(500).json({ suggestions: [] });
+  }
 });
 
 // Collaboration routes

@@ -1,26 +1,18 @@
-# Navbar Integration Task
+# TODO: Improve AI Generation for Tasks
 
-## Task Overview
-Add consistent navigation bar to all view files that are missing it.
+## Overview
+Enhance the task creation process to generate description, tags, and priority simultaneously with smooth animations for AI generation.
 
-## Files Checked
-- [x] profile.ejs - Already has navbar
-- [x] connect.ejs - Already has navbar
-- [x] error.ejs - Added navbar
-- [x] home.ejs - Added navbar
-- [x] signin.ejs - Already has navbar
-- [x] signup.ejs - Already has navbar
-- [x] visualize.ejs - Custom navbar replaced with standard partial
-- [x] dashboard.ejs - Custom navbar replaced with standard partial
+## Tasks
+- [x] Fix navbar consistency across dashboard, connect, and profile pages
+- [ ] Modify add task routes in index.js to generate description if not provided
+- [ ] Add new API endpoint `/api/ai/generate-all` to generate description, tags, priority at once
+- [ ] Update ai-service.js to include combined generation function
+- [ ] Add loading animations and UI feedback in dashboard.ejs
+- [ ] Update styles.css with new animation keyframes
+- [ ] Test the functionality and ensure smooth animations
+- [ ] Verify all three fields are generated correctly
 
-## Changes Made
-- [x] Added navbar to views/error.ejs
-- [x] Added navbar to views/home.ejs
-- [x] Added Bootstrap CSS, Font Awesome, and Bootstrap JS to both files for navbar functionality
-- [x] Replaced custom navbar in views/dashboard.ejs with <%- include('./partials/navbar.ejs') %>
-- [x] Replaced custom navbar in views/visualize.ejs with <%- include('./partials/navbar.ejs') %>
-
-## Notes
-- All view files now use the consistent navigation from partials/navbar.ejs
-- Custom styling from dashboard.ejs and visualize.ejs navbars has been standardized
-- This ensures consistent navigation experience across all pages
+## Status
+- Planning phase complete
+- Ready to implement changes
