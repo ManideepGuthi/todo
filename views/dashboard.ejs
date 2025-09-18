@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -124,37 +123,20 @@
       padding: 0;
     }
     .task-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 1.25rem 1.5rem;
-      background: var(--card-gradient);
-      border: 1px solid var(--border-color);
+      background-color: var(--card-background-color);
+      background-image: var(--card-gradient-background);
       border-radius: var(--border-radius);
+      padding: 1.25rem;
       margin-bottom: 1rem;
-      transition: var(--transition);
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: var(--transition-base);
+      cursor: pointer;
       position: relative;
-      overflow: hidden;
-    }
-    .task-item::after {
-      content: '';
-      position: absolute;
-      top: -4px;
-      left: -4px;
-      right: -4px;
-      bottom: -4px;
-      background: linear-gradient(45deg, #a8d8ea, #a8e6cf, #f9f7d9, #ffb3ba);
-      background-size: 400% 400%;
-      border-radius: 16px;
-      z-index: -1;
-      animation: aiModalBorderMove 6s ease-in-out infinite;
-      opacity: 0.4;
-      filter: blur(8px);
-      transition: all 1s ease-in-out;
-    }
-    .task-item:hover::after {
-      opacity: 0.7;
-      filter: blur(10px);
+      border: 1px solid var(--border-color);
+      overflow: hidden; /* Ensure pseudo-element glow is contained */
     }
 
     .task-item::before {
@@ -162,30 +144,60 @@
       position: absolute;
       top: 0;
       left: 0;
-      width: 4px;
+      width: 100%;
       height: 100%;
-      background: var(--primary-color);
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: var(--border-radius);
       opacity: 0;
       transition: var(--transition-fast);
     }
 
-    .task-item:hover {
-      box-shadow: var(--shadow-lg);
-      transform: translateY(-2px);
-      border-color: var(--primary-color);
+    .task-item:not(.completed)::after {
+      content: '';
+      position: absolute;
+      top: -4px;
+      left: -4px;
+      right: -4px;
+      bottom: -4px;
+      background: linear-gradient(45deg, #a8d8ea, #a8e6cf, #f9f7d9, #ffb3ba); /* Color changing gradient */
+      background-size: 400% 400%;
+      border-radius: calc(var(--border-radius) + 4px); /* Slightly larger border radius */
+      z-index: -1;
+      animation: aiModalBorderMove 6s ease-in-out infinite;
+      opacity: 0.4; /* Initial opacity */
+      filter: blur(8px);
+      transition: all 1s ease-in-out;
     }
 
-    .task-item:hover::before {
+    .task-item:not(.completed):hover::after {
+      opacity: 0.7;
+      filter: blur(10px);
+    }
+
+    .task-item:not(.completed):hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .task-item:not(.completed):hover::before {
       opacity: 1;
     }
 
     .task-item.completed {
-      opacity: 0.7;
-      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      background-color: #D4EDDA; /* A slightly softer pastel green for completed tasks */
+      background-image: none; /* Explicitly remove background image/gradient */
+      opacity: 1; /* Ensure full opacity */
+      border-left: 4px solid var(--success-color); /* Add a green border for emphasis */
+      box-shadow: none; /* Explicitly remove any glow/shadow */
+      transform: none; /* No movement on hover/interaction */
     }
 
     .task-item.completed:hover {
-      opacity: 0.8;
+      opacity: 1; /* Keep full opacity on hover */
+      background-color: #D4EDDA; /* Keep the softer pastel green on hover */
+      background-image: none; /* Explicitly remove background image/gradient on hover */
+      box-shadow: none; /* Explicitly remove any glow/shadow on hover */
+      transform: none; /* No movement on hover/interaction */
     }
     .task-content {
       flex-grow: 1;
@@ -1057,7 +1069,7 @@
 
     <!-- Tasks Section Side by Side -->
     <div class="row justify-content-center">
-      <div class="col-md-6">
+      <div class="col-12 col-lg-6">
         <div class="card mb-4">
           <div class="card-header">
             All Your Tasks
@@ -1087,159 +1099,49 @@
                 <p>No tasks found.</p>
               </div>
             <% } else { %>
-              <ul class="task-list">
-                <% tasks.forEach(task => { %>
-                  <li class="task-item">
-                    <div class="task-content">
-                      <div class="d-flex align-items-center mb-1">
-                        <% if (task.priority) { %>
-                            <span class="badge-priority badge-<%= task.priority.toLowerCase() %> me-2"><%= task.priority %></span>
-                        <% } else { %>
-                            <span class="badge-priority badge-low me-2">Low</span>
-                        <% } %>
-                        <h5 class="task-title mb-0 <%= task.status === 'completed' ? 'completed' : '' %>">
-                          <%= task.title %>
-                        </h5>
-                      </div>
-                      <% if (task.description) { %>
-                        <div class="task-description mt-2 text-muted">
-                          <%= task.description %>
+              <%
+                const pendingTasks = tasks.filter(task => task.status !== 'completed');
+                const completedTasks = tasks.filter(task => task.status === 'completed');
+              %>
+
+              <% if (pendingTasks.length > 0) { %>
+                <h5>Pending Tasks</h5>
+                <ul class="task-list">
+                  <% pendingTasks.forEach(task => { %>
+                    <li class="task-item">
+                      <div class="task-content">
+                        <div class="d-flex align-items-center mb-1">
+                          <% if (task.priority) { %>
+                              <span class="badge-priority badge-<%= task.priority.toLowerCase() %> me-2"><%= task.priority %></span>
+                          <% } else { %>
+                              <span class="badge-priority badge-low me-2">Low</span>
+                          <% } %>
+                          <h5 class="task-title mb-0">
+                            <%= task.title %>
+                          </h5>
                         </div>
-                      <% } %>
-                      <div class="task-meta mt-2">
-                      <span><i class="fas fa-calendar-plus"></i> Created: <%= task.createdAt.toLocaleString() %></span>
-
-                      <% if (task.deadline) { %>
-                        <br>
-                        <span class="text-danger"><i class="fas fa-clock"></i> Deadline: <%= task.deadline.toLocaleString() %></span>
-                      <% } %>
-
-
-                      <% if (task.status === 'completed' && task.completedAt) { %>
-                        <br>
-                        <span class="text-success"><i class="fas fa-check-circle"></i> Completed: <%= task.completedAt.toLocaleString() %></span>
-                      <% } %>
-
-                      <% if (task.tags && task.tags.length > 0) { %>
-                        <div class="mt-2">
-                          <% task.tags.forEach(tag => { %>
-                            <span class="tag-pill"><%= tag %></span>
-                          <% }) %>
-                        </div>
-                      <% } %>
-                      </div>
-
-                      <% if (task.attachment && task.attachment.filePath) { %>
-                        <div class="mt-2">
-                          <a href="<%= task.attachment.filePath %>" class="btn btn-outline-info btn-sm" target="_blank">
-                            <i class="fas fa-paperclip"></i> View Attachment
-                          </a>
-                        </div>
-                      <% } %>
-                    </div>
-                    <div class="actions-group d-flex gap-2">
-                      <% if (task.status !== 'completed') { %>
-                        <a href="#" onclick="event.preventDefault(); document.getElementById('complete-form-<%= task._id %>').submit();" class="btn btn-sm btn-success rounded-circle" title="Mark Complete">
-                          <i class="fas fa-check"></i>
-                        </a>
-                        <form id="complete-form-<%= task._id %>" action="/tasks/complete/<%= task._id %>" method="POST" style="display: none;"></form>
-                      <% } %>
-                      <button class="btn btn-sm btn-info text-white rounded-circle" data-bs-toggle="modal" data-bs-target="#editModal<%= task._id %>" title="Edit Task">
-                        <i class="fas fa-edit"></i>
-                      </button>
-                      <a href="#" onclick="event.preventDefault(); if(confirm('Are you sure you want to delete this task? This action cannot be undone.')) { document.getElementById('delete-form-<%= task._id %>').submit(); }" class="btn btn-sm btn-danger rounded-circle" title="Delete Task">
-                        <i class="fas fa-trash-alt"></i>
-                      </a>
-                      <form id="delete-form-<%= task._id %>" action="/tasks/delete/<%= task._id %>" method="POST" style="display: none;"></form>
-                    </div>
-                  </li>
-                  <!-- Edit Modal for Personal Tasks -->
-                  <div class="modal fade" id="editModal<%= task._id %>" tabindex="-1" aria-hidden="true">
-                    <div class="modal-dialog">
-                      <div class="modal-content">
-                        <div class="modal-header">
-                          <h5 class="modal-title">Edit Task</h5>
-                          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                        </div>
-                        <form action="/tasks/edit/<%= task._id %>" method="POST">
-                          <div class="modal-body d-grid gap-3">
-                            <label class="form-label">Title</label>
-                            <input type="text" name="title" class="form-control" value="<%= task.title %>" required>
-
-                            <label class="form-label">Description</label>
-                            <textarea name="description" class="form-control" rows="3"><%= task.description %></textarea>
-
-                            <label class="form-label">Tags</label>
-                            <input type="text" name="tags" class="form-control" value="<%= task.tags ? task.tags.join(', ') : '' %>">
-
-                            <label class="form-label">Priority</label>
-                            <select name="priority" class="form-select">
-                              <option value="Low" <%= task.priority === 'Low' ? 'selected' : '' %>>Low Priority</option>
-                              <option value="Medium" <%= task.priority === 'Medium' ? 'selected' : '' %>>Medium Priority</option>
-                              <option value="High" <%= task.priority === 'High' ? 'selected' : '' %>>High Priority</option>
-                            </select>
-
-                            <% if (task.deadline) { %>
-                              <label for="edit-deadline-<%= task._id %>" class="form-label">Deadline</label>
-                              <input type="datetime-local" name="deadline" id="edit-deadline-<%= task._id %>" class="form-control" value="<%= task.deadline.toISOString().slice(0, 16) %>">
-                            <% } %>
+                        <% if (task.description) { %>
+                          <div class="task-description mt-2 text-muted">
+                            <%= task.description %>
                           </div>
-                          <div class="modal-footer">
-                            <button type="submit" class="btn btn-primary">Save</button>
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                          </div>
-                        </form>
-                      </div>
-                    </div>
-                  </div>
-                <% }) %>
-              </ul>
-            <% } %>
-          </div>
-        </div>
-      </div>
+                        <% } %>
+                        <div class="task-meta mt-2">
+                        <span><i class="fas fa-calendar-plus"></i> Created: <%= task.createdAt.toLocaleString() %></span>
 
-      <div class="col-md-6">
-        <div class="card mb-4">
-          <div class="card-header">
-            Shared Tasks You've Sent
-          </div>
-          <div class="card-body">
-            <% if (sentTasks.length === 0) { %>
-              <div class="text-center text-muted py-5">
-                <i class="fas fa-share-alt fa-3x mb-3"></i>
-                <p>You have not sent any shared tasks yet.</p>
-              </div>
-            <% } else { %>
-              <ul class="task-list">
-                <% sentTasks.forEach(task => { %>
-                  <li class="task-item">
-                    <div class="task-content">
-                      <h5 class="task-title mb-0 <%= task.completed ? 'completed' : '' %>">
-                        <%= task.task %>
-                      </h5>
-                      <div class="task-meta mt-2">
-                        <!-- Corrected Line -->
-                        <% if (task.room && task.room.name) { %>
-                          <span><i class="fas fa-chalkboard-teacher"></i> Room: <%= task.room.name %></span>
-                          <br>
-                        <% } %>
-                        <% if (task.createdAt) { %>
-                            <span><i class="fas fa-calendar-plus"></i> Sent: <%= task.createdAt.toLocaleString() %></span>
-                        <% } else { %>
-                            <span><i class="fas fa-calendar-plus"></i> Sent: Not Available</span>
-                        <% } %>
-                        <% if (task.completed) { %>
-                          <br>
-                          <span class="text-success"><i class="fas fa-check-circle"></i> Status: Completed</span>
-                        <% } else { %>
-                          <br>
-                          <span class="text-warning"><i class="fas fa-sync"></i> Status: Pending</span>
-                        <% } %>
                         <% if (task.deadline) { %>
                           <br>
                           <span class="text-danger"><i class="fas fa-clock"></i> Deadline: <%= task.deadline.toLocaleString() %></span>
                         <% } %>
+
+                        <% if (task.tags && task.tags.length > 0) { %>
+                          <div class="mt-2">
+                            <% task.tags.forEach(tag => { %>
+                              <span class="tag-pill"><%= tag %></span>
+                            <% }) %>
+                          </div>
+                        <% } %>
+                        </div>
+
                         <% if (task.attachment && task.attachment.filePath) { %>
                           <div class="mt-2">
                             <a href="<%= task.attachment.filePath %>" class="btn btn-outline-info btn-sm" target="_blank">
@@ -1248,56 +1150,481 @@
                           </div>
                         <% } %>
                       </div>
-                    </div>
-                    <div class="actions-group d-flex gap-2">
-                        <button class="btn btn-sm btn-info text-white rounded-circle" data-bs-toggle="modal" data-bs-target="#editSharedModal<%= task._id %>" title="Edit Shared Task">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <a href="#" onclick="event.preventDefault(); if(confirm('Are you sure you want to delete this shared task? This action cannot be undone.')) { document.getElementById('delete-shared-form-<%= task._id %>').submit(); }" class="btn btn-sm btn-danger rounded-circle" title="Delete Shared Task">
-                            <i class="fas fa-trash-alt"></i>
+                      <div class="actions-group d-flex gap-2">
+                        <a href="#" onclick="event.preventDefault(); document.getElementById('complete-form-<%= task._id %>').submit();" class="btn btn-sm btn-success rounded-circle" title="Mark Complete">
+                          <i class="fas fa-check"></i>
                         </a>
-                        <form id="delete-shared-form-<%= task._id %>" action="/rooms/delete-shared-task/<%= task._id %>" method="POST" style="display: none;"></form>
-                    </div>
-                  </li>
-                  <!-- Edit Modal for Shared Tasks -->
-                  <div class="modal fade" id="editSharedModal<%= task._id %>" tabindex="-1" aria-hidden="true">
-                    <div class="modal-dialog">
-                      <div class="modal-content">
-                        <div class="modal-header">
-                          <h5 class="modal-title">Edit Shared Task</h5>
-                          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        <form id="complete-form-<%= task._id %>" action="/tasks/complete/<%= task._id %>" method="POST" style="display: none;"></form>
+                        <button class="btn btn-sm btn-info text-white rounded-circle" data-bs-toggle="modal" data-bs-target="#editModal<%= task._id %>" title="Edit Task">
+                          <i class="fas fa-edit"></i>
+                        </button>
+                        <a href="#" onclick="event.preventDefault(); if(confirm('Are you sure you want to delete this task? This action cannot be undone.')) { document.getElementById('delete-form-<%= task._id %>').submit(); }" class="btn btn-sm btn-danger rounded-circle" title="Delete Task">
+                          <i class="fas fa-trash-alt"></i>
+                        </a>
+                        <form id="delete-form-<%= task._id %>" action="/tasks/delete/<%= task._id %>" method="POST" style="display: none;"></form>
+                      </div>
+                    </li>
+                    <!-- Edit Modal for Personal Tasks -->
+                    <div class="modal fade" id="editModal<%= task._id %>" tabindex="-1" aria-hidden="true">
+                      <div class="modal-dialog">
+                        <div class="modal-content">
+                          <div class="modal-header">
+                            <h5 class="modal-title">Edit Task</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                          </div>
+                          <form action="/tasks/edit/<%= task._id %>" method="POST">
+                            <div class="modal-body d-grid gap-3">
+                              <label class="form-label">Title</label>
+                              <input type="text" name="title" class="form-control" value="<%= task.title %>" required>
+
+                              <label class="form-label">Description</label>
+                              <textarea name="description" class="form-control" rows="3"><%= task.description %></textarea>
+
+                              <label class="form-label">Tags</label>
+                              <input type="text" name="tags" class="form-control" value="<%= task.tags ? task.tags.join(', ') : '' %>">
+
+                              <label class="form-label">Priority</label>
+                              <select name="priority" class="form-select">
+                                <option value="Low" <%= task.priority === 'Low' ? 'selected' : '' %>>Low Priority</option>
+                                <option value="Medium" <%= task.priority === 'Medium' ? 'selected' : '' %>>Medium Priority</option>
+                                <option value="High" <%= task.priority === 'High' ? 'selected' : '' %>>High Priority</option>
+                              </select>
+
+                              <% if (task.deadline) { %>
+                                <label for="edit-deadline-<%= task._id %>" class="form-label">Deadline</label>
+                                <input type="datetime-local" name="deadline" id="edit-deadline-<%= task._id %>" class="form-control" value="<%= task.deadline.toISOString().slice(0, 16) %>">
+                              <% } %>
+                            </div>
+                            <div class="modal-footer">
+                              <button type="submit" class="btn btn-primary">Save</button>
+                              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            </div>
+                          </form>
                         </div>
-                        <form action="/rooms/edit-shared-task/<%= task._id %>" method="POST">
-                          <div class="modal-body d-grid gap-3">
-                            <label class="form-label">Title</label>
-                            <input type="text" name="task" class="form-control" value="<%= task.task %>" required>
-
-                            <label class="form-label">Description</label>
-                            <textarea name="description" class="form-control" rows="3"><%= task.description %></textarea>
-
-                            <label class="form-label">Tags</label>
-                            <input type="text" name="tags" class="form-control" value="<%= task.tags ? task.tags.join(', ') : '' %>">
-                          
-                            <label class="form-label">Priority</label>
-                            <select name="priority" class="form-select">
-                              <option value="Low" <%= task.priority === 'Low' ? 'selected' : '' %>>Low Priority</option>
-                              <option value="Medium" <%= task.priority === 'Medium' ? 'selected' : '' %>>Medium Priority</option>
-                              <option value="High" <%= task.priority === 'High' ? 'selected' : '' %>>High Priority</option>
-                            </select>
-                            <label for="shared-deadline-<%= task._id %>" class="form-label mt-2">Update Deadline:</label>
-                            <input type="datetime-local" name="deadline" id="shared-deadline-<%= task._id %>" class="form-control" value="<%= task.deadline ? task.deadline.toISOString().slice(0, 16) : '' %>">
-                          </div>
-                          <div class="modal-footer">
-                            <button type="submit" class="btn btn-primary">Save</button>
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                          </div>
-                        </form>
                       </div>
                     </div>
-                  </div>
-                <% }) %>
-              </ul>
+                  <% }) %>
+                </ul>
+              <% } %>
+
+              <% if (pendingTasks.length > 0 && completedTasks.length > 0) { %>
+                <hr class="my-4">
+              <% } %>
+
+              <% if (completedTasks.length > 0) { %>
+                <h5>Completed Tasks</h5>
+                <ul class="task-list">
+                  <% completedTasks.forEach(task => { %>
+                    <li class="task-item completed">
+                      <div class="task-content">
+                        <div class="d-flex align-items-center mb-1">
+                          <% if (task.priority) { %>
+                              <span class="badge-priority badge-<%= task.priority.toLowerCase() %> me-2"><%= task.priority %></span>
+                          <% } else { %>
+                              <span class="badge-priority badge-low me-2">Low</span>
+                          <% } %>
+                          <h5 class="task-title mb-0 <%= task.status === 'completed' ? 'completed' : '' %>">
+                            <%= task.title %>
+                          </h5>
+                        </div>
+                        <% if (task.description) { %>
+                          <div class="task-description mt-2 text-muted">
+                            <%= task.description %>
+                          </div>
+                        <% } %>
+                        <div class="task-meta mt-2">
+                        <span><i class="fas fa-calendar-plus"></i> Created: <%= task.createdAt.toLocaleString() %></span>
+
+                        <% if (task.deadline) { %>
+                          <br>
+                          <span class="text-danger"><i class="fas fa-clock"></i> Deadline: <%= task.deadline.toLocaleString() %></span>
+                        <% } %>
+
+                        <% if (task.status === 'completed' && task.completedAt) { %>
+                          <br>
+                          <span class="text-success"><i class="fas fa-check-circle"></i> Completed: <%= task.completedAt.toLocaleString() %></span>
+                        <% } %>
+
+                        <% if (task.tags && task.tags.length > 0) { %>
+                          <div class="mt-2">
+                            <% task.tags.forEach(tag => { %>
+                              <span class="tag-pill"><%= tag %></span>
+                            <% }) %>
+                          </div>
+                        <% } %>
+                        </div>
+
+                        <% if (task.attachment && task.attachment.filePath) { %>
+                          <div class="mt-2">
+                            <a href="<%= task.attachment.filePath %>" class="btn btn-outline-info btn-sm" target="_blank">
+                              <i class="fas fa-paperclip"></i> View Attachment
+                            </a>
+                          </div>
+                        <% } %>
+                      </div>
+                      <div class="actions-group d-flex gap-2">
+                        <button class="btn btn-sm btn-info text-white rounded-circle" data-bs-toggle="modal" data-bs-target="#editModal<%= task._id %>" title="Edit Task">
+                          <i class="fas fa-edit"></i>
+                        </button>
+                        <a href="#" onclick="event.preventDefault(); if(confirm('Are you sure you want to delete this task? This action cannot be undone.')) { document.getElementById('delete-form-<%= task._id %>').submit(); }" class="btn btn-sm btn-danger rounded-circle" title="Delete Task">
+                          <i class="fas fa-trash-alt"></i>
+                        </a>
+                        <form id="delete-form-<%= task._id %>" action="/tasks/delete/<%= task._id %>" method="POST" style="display: none;"></form>
+                      </div>
+                    </li>
+                    <!-- Edit Modal for Personal Tasks -->
+                    <div class="modal fade" id="editModal<%= task._id %>" tabindex="-1" aria-hidden="true">
+                      <div class="modal-dialog">
+                        <div class="modal-content">
+                          <div class="modal-header">
+                            <h5 class="modal-title">Edit Task</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                          </div>
+                          <form action="/tasks/edit/<%= task._id %>" method="POST">
+                            <div class="modal-body d-grid gap-3">
+                              <label class="form-label">Title</label>
+                              <input type="text" name="title" class="form-control" value="<%= task.title %>" required>
+
+                              <label class="form-label">Description</label>
+                              <textarea name="description" class="form-control" rows="3"><%= task.description %></textarea>
+
+                              <label class="form-label">Tags</label>
+                              <input type="text" name="tags" class="form-control" value="<%= task.tags ? task.tags.join(', ') : '' %>">
+
+                              <label class="form-label">Priority</label>
+                              <select name="priority" class="form-select">
+                                <option value="Low" <%= task.priority === 'Low' ? 'selected' : '' %>>Low Priority</option>
+                                <option value="Medium" <%= task.priority === 'Medium' ? 'selected' : '' %>>Medium Priority</option>
+                                <option value="High" <%= task.priority === 'High' ? 'selected' : '' %>>High Priority</option>
+                              </select>
+
+                              <% if (task.deadline) { %>
+                                <label for="edit-deadline-<%= task._id %>" class="form-label">Deadline</label>
+                                <input type="datetime-local" name="deadline" id="edit-deadline-<%= task._id %>" class="form-control" value="<%= task.deadline.toISOString().slice(0, 16) %>">
+                              <% } %>
+                            </div>
+                            <div class="modal-footer">
+                              <button type="submit" class="btn btn-primary">Save</button>
+                              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            </div>
+                          </form>
+                        </div>
+                      </div>
+                    </div>
+                  <% }) %>
+                </ul>
+              <% } %>
             <% } %>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 col-lg-6">
+        <div class="row">
+          <div class="col-12 col-md-12">
+            <div class="card mb-4">
+              <div class="card-header">
+                Shared Tasks You've Sent
+              </div>
+              <div class="card-body">
+                <% if (sentTasks.length === 0) { %>
+                  <div class="text-center text-muted py-5">
+                    <i class="fas fa-share-alt fa-3x mb-3"></i>
+                    <p>You have not sent any shared tasks yet.</p>
+                  </div>
+                <% } else { %>
+                  <%
+                    const pendingSentTasks = sentTasks.filter(task => !task.completed);
+                    const completedSentTasks = sentTasks.filter(task => task.completed);
+                  %>
+
+                  <% if (pendingSentTasks.length > 0) { %>
+                    <h5>Pending Shared Tasks</h5>
+                    <ul class="task-list">
+                      <% pendingSentTasks.forEach(task => { %>
+                        <li class="task-item">
+                          <div class="task-content">
+                            <h5 class="task-title mb-0">
+                              <%= task.task %>
+                            </h5>
+                            <div class="task-meta mt-2">
+                              <% if (task.room && task.room.name) { %>
+                                <span><i class="fas fa-chalkboard-teacher"></i> Room: <%= task.room.name %></span>
+                                <br>
+                              <% } %>
+                              <% if (task.createdAt) { %>
+                                  <span><i class="fas fa-calendar-plus"></i> Sent: <%= task.createdAt.toLocaleString() %></span>
+                              <% } else { %>
+                                  <span><i class="fas fa-calendar-plus"></i> Sent: Not Available</span>
+                              <% } %>
+                              <% if (task.deadline) { %>
+                                <br>
+                                <span class="text-danger"><i class="fas fa-clock"></i> Deadline: <%= task.deadline.toLocaleString() %></span>
+                              <% } %>
+                              <% if (task.attachment && task.attachment.filePath) { %>
+                                <div class="mt-2">
+                                  <a href="<%= task.attachment.filePath %>" class="btn btn-outline-info btn-sm" target="_blank">
+                                    <i class="fas fa-paperclip"></i> View Attachment
+                                  </a>
+                                </div>
+                              <% } %>
+                            </div>
+                          </div>
+                          <div class="actions-group d-flex gap-2">
+                              <button class="btn btn-sm btn-info text-white rounded-circle" data-bs-toggle="modal" data-bs-target="#editSharedModal<%= task._id %>" title="Edit Shared Task">
+                                  <i class="fas fa-edit"></i>
+                              </button>
+                              <a href="#" onclick="event.preventDefault(); if(confirm('Are you sure you want to delete this shared task? This action cannot be undone.')) { document.getElementById('delete-shared-form-<%= task._id %>').submit(); }" class="btn btn-sm btn-danger rounded-circle" title="Delete Shared Task">
+                                  <i class="fas fa-trash-alt"></i>
+                              </a>
+                              <form id="delete-shared-form-<%= task._id %>" action="/rooms/delete-shared-task/<%= task._id %>" method="POST" style="display: none;"></form>
+                          </div>
+                        </li>
+                        <!-- Edit Modal for Shared Tasks -->
+                        <div class="modal fade" id="editSharedModal<%= task._id %>" tabindex="-1" aria-hidden="true">
+                          <div class="modal-dialog">
+                            <div class="modal-content">
+                              <div class="modal-header">
+                                <h5 class="modal-title">Edit Shared Task</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                              </div>
+                              <form action="/rooms/edit-shared-task/<%= task._id %>" method="POST">
+                                <div class="modal-body d-grid gap-3">
+                                  <label class="form-label">Title</label>
+                                  <input type="text" name="task" class="form-control" value="<%= task.task %>" required>
+
+                                  <label class="form-label">Description</label>
+                                  <textarea name="description" class="form-control" rows="3"><%= task.description %></textarea>
+
+                                  <label class="form-label">Tags</label>
+                                  <input type="text" name="tags" class="form-control" value="<%= task.tags ? task.tags.join(', ') : '' %>">
+                                
+                                  <label class="form-label">Priority</label>
+                                  <select name="priority" class="form-select">
+                                    <option value="Low" <%= task.priority === 'Low' ? 'selected' : '' %>>Low Priority</option>
+                                    <option value="Medium" <%= task.priority === 'Medium' ? 'selected' : '' %>>Medium Priority</option>
+                                    <option value="High" <%= task.priority === 'High' ? 'selected' : '' %>>High Priority</option>
+                                  </select>
+                                  <label for="shared-deadline-<%= task._id %>" class="form-label mt-2">Update Deadline:</label>
+                                  <input type="datetime-local" name="deadline" id="shared-deadline-<%= task._id %>" class="form-control" value="<%= task.deadline ? task.deadline.toISOString().slice(0, 16) : '' %>">
+                                </div>
+                                <div class="modal-footer">
+                                  <button type="submit" class="btn btn-primary">Save</button>
+                                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                </div>
+                              </form>
+                            </div>
+                          </div>
+                        </div>
+                      <% }) %>
+                    </ul>
+                  <% } %>
+
+                  <% if (pendingSentTasks.length > 0 && completedSentTasks.length > 0) { %>
+                    <hr class="my-4">
+                  <% } %>
+
+                  <% if (completedSentTasks.length > 0) { %>
+                    <h5>Completed Shared Tasks</h5>
+                    <ul class="task-list">
+                      <% completedSentTasks.forEach(task => { %>
+                        <li class="task-item completed">
+                          <div class="task-content">
+                            <h5 class="task-title mb-0 <%= task.completed ? 'completed' : '' %>">
+                              <%= task.task %>
+                            </h5>
+                            <div class="task-meta mt-2">
+                              <% if (task.room && task.room.name) { %>
+                                <span><i class="fas fa-chalkboard-teacher"></i> Room: <%= task.room.name %></span>
+                                <br>
+                              <% } %>
+                              <% if (task.createdAt) { %>
+                                  <span><i class="fas fa-calendar-plus"></i> Sent: <%= task.createdAt.toLocaleString() %></span>
+                              <% } else { %>
+                                  <span><i class="fas fa-calendar-plus"></i> Sent: Not Available</span>
+                              <% } %>
+                              <br>
+                              <span class="text-success"><i class="fas fa-check-circle"></i> Status: Completed</span>
+                              <% if (task.deadline) { %>
+                                <br>
+                                <span class="text-danger"><i class="fas fa-clock"></i> Deadline: <%= task.deadline.toLocaleString() %></span>
+                              <% } %>
+                              <% if (task.attachment && task.attachment.filePath) { %>
+                                <div class="mt-2">
+                                  <a href="<%= task.attachment.filePath %>" class="btn btn-outline-info btn-sm" target="_blank">
+                                    <i class="fas fa-paperclip"></i> View Attachment
+                                  </a>
+                                </div>
+                              <% } %>
+                            </div>
+                          </div>
+                          <div class="actions-group d-flex gap-2">
+                              <button class="btn btn-sm btn-info text-white rounded-circle" data-bs-toggle="modal" data-bs-target="#editSharedModal<%= task._id %>" title="Edit Shared Task">
+                                  <i class="fas fa-edit"></i>
+                              </button>
+                              <a href="#" onclick="event.preventDefault(); if(confirm('Are you sure you want to delete this shared task? This action cannot be undone.')) { document.getElementById('delete-shared-form-<%= task._id %>').submit(); }" class="btn btn-sm btn-danger rounded-circle" title="Delete Shared Task">
+                                  <i class="fas fa-trash-alt"></i>
+                              </a>
+                              <form id="delete-shared-form-<%= task._id %>" action="/rooms/delete-shared-task/<%= task._id %>" method="POST" style="display: none;"></form>
+                          </div>
+                        </li>
+                        <!-- Edit Modal for Shared Tasks (completed) -->
+                        <div class="modal fade" id="editSharedModal<%= task._id %>" tabindex="-1" aria-hidden="true">
+                          <div class="modal-dialog">
+                            <div class="modal-content">
+                              <div class="modal-header">
+                                <h5 class="modal-title">Edit Shared Task</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                              </div>
+                              <form action="/rooms/edit-shared-task/<%= task._id %>" method="POST">
+                                <div class="modal-body d-grid gap-3">
+                                  <label class="form-label">Title</label>
+                                  <input type="text" name="task" class="form-control" value="<%= task.task %>" required>
+
+                                  <label class="form-label">Description</label>
+                                  <textarea name="description" class="form-control" rows="3"><%= task.description %></textarea>
+
+                                  <label class="form-label">Tags</label>
+                                  <input type="text" name="tags" class="form-control" value="<%= task.tags ? task.tags.join(', ') : '' %>">
+                                
+                                  <label class="form-label">Priority</label>
+                                  <select name="priority" class="form-select">
+                                    <option value="Low" <%= task.priority === 'Low' ? 'selected' : '' %>>Low Priority</option>
+                                    <option value="Medium" <%= task.priority === 'Medium' ? 'selected' : '' %>>Medium Priority</option>
+                                    <option value="High" <%= task.priority === 'High' ? 'selected' : '' %>>High Priority</option>
+                                  </select>
+                                  <label for="shared-deadline-<%= task._id %>" class="form-label mt-2">Update Deadline:</label>
+                                  <input type="datetime-local" name="deadline" id="shared-deadline-<%= task._id %>" class="form-control" value="<%= task.deadline ? task.deadline.toISOString().slice(0, 16) : '' %>">
+                                </div>
+                                <div class="modal-footer">
+                                  <button type="submit" class="btn btn-primary">Save</button>
+                                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                </div>
+                              </form>
+                            </div>
+                          </div>
+                        </div>
+                      <% }) %>
+                    </ul>
+                  <% } %>
+                <% } %>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-md-12">
+            <div class="card mb-4">
+              <div class="card-header">
+                Shared Tasks You've Received
+              </div>
+              <div class="card-body">
+                <% if (receivedTasks.length === 0) { %>
+                  <div class="text-center text-muted py-5">
+                    <i class="fas fa-inbox fa-3x mb-3"></i>
+                    <p>You have not received any shared tasks yet.</p>
+                  </div>
+                <% } else { %>
+                  <%
+                    const pendingReceivedTasks = receivedTasks.filter(task => !task.completed);
+                    const completedReceivedTasks = receivedTasks.filter(task => task.completed);
+                  %>
+
+                  <% if (pendingReceivedTasks.length > 0) { %>
+                    <h5>Pending Received Tasks</h5>
+                    <ul class="task-list">
+                      <% pendingReceivedTasks.forEach(task => { %>
+                        <li class="task-item">
+                          <div class="task-content">
+                            <h5 class="task-title mb-0">
+                              <%= task.task %>
+                            </h5>
+                            <div class="task-meta mt-2">
+                              <% if (task.sender && task.sender.name) { %>
+                                <span><i class="fas fa-user-circle"></i> From: <%= task.sender.name %></span>
+                                <br>
+                              <% } %>
+                              <% if (task.createdAt) { %>
+                                  <span><i class="fas fa-calendar-plus"></i> Received: <%= task.createdAt.toLocaleString() %></span>
+                              <% } %>
+                              <% if (task.deadline) { %>
+                                <br>
+                                <span class="text-danger"><i class="fas fa-clock"></i> Deadline: <%= task.deadline.toLocaleString() %></span>
+                              <% } %>
+                              <% if (task.attachment && task.attachment.filePath) { %>
+                                <div class="mt-2">
+                                  <a href="<%= task.attachment.filePath %>" class="btn btn-outline-info btn-sm" target="_blank">
+                                    <i class="fas fa-paperclip"></i> View Attachment
+                                  </a>
+                                </div>
+                              <% } %>
+                            </div>
+                          </div>
+                          <div class="actions-group d-flex gap-2">
+                            <% if (!task.completed) { %>
+                              <a href="#" onclick="event.preventDefault(); document.getElementById('complete-received-form-<%= task._id %>').submit();" class="btn btn-sm btn-success rounded-circle" title="Mark Complete">
+                                <i class="fas fa-check"></i>
+                              </a>
+                              <form id="complete-received-form-<%= task._id %>" action="/rooms/complete-shared-task/<%= task._id %>" method="POST" style="display: none;"></form>
+                            <% } %>
+                            <a href="#" onclick="event.preventDefault(); if(confirm('Are you sure you want to decline this shared task? This action cannot be undone.')) { document.getElementById('decline-shared-form-<%= task._id %>').submit(); }" class="btn btn-sm btn-danger rounded-circle" title="Decline Task">
+                              <i class="fas fa-times"></i>
+                            </a>
+                            <form id="decline-shared-form-<%= task._id %>" action="/rooms/decline-shared-task/<%= task._id %>" method="POST" style="display: none;"></form>
+                          </div>
+                        </li>
+                      <% }) %>
+                    </ul>
+                  <% } %>
+
+                  <% if (pendingReceivedTasks.length > 0 && completedReceivedTasks.length > 0) { %>
+                    <hr class="my-4">
+                  <% } %>
+
+                  <% if (completedReceivedTasks.length > 0) { %>
+                    <h5>Completed Received Tasks</h5>
+                    <ul class="task-list">
+                      <% completedReceivedTasks.forEach(task => { %>
+                        <li class="task-item completed">
+                          <div class="task-content">
+                            <h5 class="task-title mb-0 <%= task.completed ? 'completed' : '' %>">
+                              <%= task.task %>
+                            </h5>
+                            <div class="task-meta mt-2">
+                              <% if (task.sender && task.sender.name) { %>
+                                <span><i class="fas fa-user-circle"></i> From: <%= task.sender.name %></span>
+                                <br>
+                              <% } %>
+                              <% if (task.createdAt) { %>
+                                  <span><i class="fas fa-calendar-plus"></i> Received: <%= task.createdAt.toLocaleString() %></span>
+                              <% } %>
+                              <% if (task.deadline) { %>
+                                <br>
+                                <span class="text-danger"><i class="fas fa-clock"></i> Deadline: <%= task.deadline.toLocaleString() %></span>
+                              <% } %>
+                              <br>
+                              <span class="text-success"><i class="fas fa-check-circle"></i> Status: Completed</span>
+                              <% if (task.attachment && task.attachment.filePath) { %>
+                                <div class="mt-2">
+                                  <a href="<%= task.attachment.filePath %>" class="btn btn-outline-info btn-sm" target="_blank">
+                                    <i class="fas fa-paperclip"></i> View Attachment
+                                  </a>
+                                </div>
+                              <% } %>
+                            </div>
+                          </div>
+                          <div class="actions-group d-flex gap-2">
+                            <a href="#" onclick="event.preventDefault(); if(confirm('Are you sure you want to delete this shared task? This action cannot be undone.')) { document.getElementById('decline-shared-form-<%= task._id %>').submit(); }" class="btn btn-sm btn-danger rounded-circle" title="Delete Task">
+                              <i class="fas fa-trash-alt"></i>
+                            </a>
+                            <form id="decline-shared-form-<%= task._id %>" action="/rooms/decline-shared-task/<%= task._id %>" method="POST" style="display: none;"></form>
+                          </div>
+                        </li>
+                      <% }) %>
+                    </ul>
+                  <% } %>
+                <% } %>
+              </div>
+            </div>
           </div>
         </div>
       </div>

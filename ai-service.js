@@ -1,33 +1,162 @@
 const nlp = require('compromise');
 const Fuse = require('fuse.js');
+const natural = require('natural');
 
-// Function to analyze task priority based on title and description
+// Enhanced dictionary and word database
+const comprehensiveDictionary = {
+  // Action verbs with context
+  actions: {
+    'create': ['build', 'make', 'design', 'develop', 'establish', 'found', 'generate', 'produce', 'construct', 'fabricate'],
+    'analyze': ['examine', 'study', 'investigate', 'research', 'evaluate', 'assess', 'review', 'scrutinize', 'inspect', 'audit'],
+    'manage': ['organize', 'coordinate', 'supervise', 'oversee', 'direct', 'control', 'administer', 'govern', 'regulate', 'handle'],
+    'communicate': ['discuss', 'present', 'explain', 'share', 'inform', 'notify', 'announce', 'report', 'convey', 'transmit'],
+    'plan': ['strategize', 'schedule', 'arrange', 'prepare', 'organize', 'structure', 'outline', 'draft', 'sketch', 'blueprint'],
+    'implement': ['execute', 'deploy', 'launch', 'activate', 'initiate', 'start', 'begin', 'commence', 'undertake', 'carry out'],
+    'review': ['examine', 'assess', 'evaluate', 'check', 'inspect', 'audit', 'scrutinize', 'analyze', 'appraise', 'critique'],
+    'optimize': ['improve', 'enhance', 'refine', 'perfect', 'upgrade', 'advance', 'boost', 'maximize', 'streamline', 'tune'],
+    'test': ['validate', 'verify', 'check', 'examine', 'prove', 'confirm', 'demonstrate', 'trial', 'experiment', 'assess'],
+    'fix': ['repair', 'correct', 'resolve', 'solve', 'mend', 'restore', 'remedy', 'address', 'troubleshoot', 'debug']
+  },
+  
+  // Professional domains
+  domains: {
+    'technology': ['software', 'hardware', 'programming', 'development', 'coding', 'engineering', 'computing', 'digital', 'IT', 'tech'],
+    'business': ['management', 'strategy', 'operations', 'finance', 'marketing', 'sales', 'administration', 'leadership', 'corporate', 'commercial'],
+    'education': ['learning', 'teaching', 'training', 'instruction', 'academic', 'scholarly', 'educational', 'pedagogical', 'tutorial', 'curriculum'],
+    'healthcare': ['medical', 'clinical', 'therapeutic', 'health', 'wellness', 'treatment', 'diagnosis', 'patient', 'care', 'medicine'],
+    'creative': ['design', 'artistic', 'creative', 'aesthetic', 'visual', 'graphic', 'artistic', 'imaginative', 'innovative', 'original'],
+    'research': ['investigation', 'study', 'analysis', 'exploration', 'discovery', 'experimentation', 'inquiry', 'examination', 'survey', 'probe']
+  },
+  
+  // Priority indicators
+  priority: {
+    'urgent': ['critical', 'immediate', 'asap', 'emergency', 'pressing', 'vital', 'essential', 'crucial', 'paramount', 'top-priority'],
+    'high': ['important', 'significant', 'major', 'key', 'primary', 'main', 'principal', 'chief', 'leading', 'foremost'],
+    'medium': ['moderate', 'standard', 'regular', 'normal', 'typical', 'average', 'routine', 'common', 'usual', 'ordinary'],
+    'low': ['minor', 'secondary', 'optional', 'someday', 'eventually', 'whenever', 'later', 'low-priority', 'non-essential', 'deferrable']
+  },
+  
+  // Time indicators
+  timeframes: {
+    'immediate': ['now', 'today', 'urgent', 'asap', 'immediately', 'right away', 'at once', 'instantly', 'promptly', 'quickly'],
+    'short-term': ['this week', 'soon', 'shortly', 'in a few days', 'by tomorrow', 'this month', 'recently', 'lately', 'currently', 'presently'],
+    'medium-term': ['next month', 'in a few weeks', 'quarterly', 'monthly', 'periodically', 'regularly', 'frequently', 'often', 'repeatedly', 'consistently'],
+    'long-term': ['this year', 'annually', 'yearly', 'long-term', 'future', 'eventually', 'someday', 'later', 'eventually', 'ultimately']
+  }
+};
+
+// Enhanced function to analyze task priority with comprehensive dictionary
 function analyzeTaskPriority(title, description) {
-  const doc = nlp(title + ' ' + description);
-
-  // Check for urgency keywords
-  const urgentWords = doc.match('urgent|asap|immediately|important|priority');
-  const deadlineWords = doc.match('deadline|due|by tomorrow|soon');
-
-  if (urgentWords.found || deadlineWords.found) {
-    return 'High';
-  }
-
-  // Check for low priority indicators
-  const lowPriorityWords = doc.match('someday|eventually|whenever|later');
-  if (lowPriorityWords.found) {
-    return 'Low';
-  }
-
-  return 'Medium'; // Default priority
+  const text = (title + ' ' + description).toLowerCase();
+  const doc = nlp(text);
+  
+  let urgencyScore = 0;
+  let importanceScore = 0;
+  let timePressureScore = 0;
+  
+  // Check urgent keywords with comprehensive dictionary
+  comprehensiveDictionary.priority.urgent.forEach(word => {
+    if (text.includes(word) || doc.has(word)) {
+      urgencyScore += 3;
+    }
+  });
+  
+  // Check high priority keywords
+  comprehensiveDictionary.priority.high.forEach(word => {
+    if (text.includes(word) || doc.has(word)) {
+      importanceScore += 2;
+    }
+  });
+  
+  // Check low priority keywords
+  comprehensiveDictionary.priority.low.forEach(word => {
+    if (text.includes(word) || doc.has(word)) {
+      importanceScore -= 2;
+    }
+  });
+  
+  // Check time pressure indicators
+  comprehensiveDictionary.timeframes.immediate.forEach(word => {
+    if (text.includes(word) || doc.has(word)) {
+      timePressureScore += 2;
+    }
+  });
+  
+  // Check for deadline indicators
+  const deadlinePatterns = ['deadline', 'due', 'by tomorrow', 'soon', 'expires', 'closes', 'ends'];
+  deadlinePatterns.forEach(pattern => {
+    if (text.includes(pattern) || doc.has(pattern)) {
+      timePressureScore += 2;
+    }
+  });
+  
+  // Check for action urgency
+  const urgentActions = ['fix', 'resolve', 'correct', 'repair', 'emergency', 'critical', 'urgent'];
+  urgentActions.forEach(action => {
+    if (text.includes(action) || doc.has(action)) {
+      urgencyScore += 1;
+    }
+  });
+  
+  // Calculate final priority
+  const totalScore = urgencyScore + importanceScore + timePressureScore;
+  
+  if (totalScore >= 5) return 'High';
+  if (totalScore <= -2) return 'Low';
+  return 'Medium';
 }
 
-// Function to extract keywords from task description for tagging
+// Enhanced function to extract keywords with comprehensive analysis
 function extractKeywords(text) {
   const doc = nlp(text);
+  const keywords = new Set();
+  
+  // Extract nouns with frequency
   const nouns = doc.nouns().out('frequency');
-  // Return top 5 nouns as keywords
-  return nouns.slice(0, 5).map(item => item.normal);
+  nouns.slice(0, 8).forEach(item => {
+    if (item.normal.length > 2) { // Filter out very short words
+      keywords.add(item.normal);
+    }
+  });
+  
+  // Extract verbs (action words)
+  const verbs = doc.verbs().out('frequency');
+  verbs.slice(0, 5).forEach(item => {
+    if (item.normal.length > 2) {
+      keywords.add(item.normal);
+    }
+  });
+  
+  // Extract adjectives (descriptive words)
+  const adjectives = doc.adjectives().out('frequency');
+  adjectives.slice(0, 3).forEach(item => {
+    if (item.normal.length > 2) {
+      keywords.add(item.normal);
+    }
+  });
+  
+  // Add domain-specific keywords
+  Object.keys(comprehensiveDictionary.domains).forEach(domain => {
+    comprehensiveDictionary.domains[domain].forEach(word => {
+      if (text.toLowerCase().includes(word)) {
+        keywords.add(domain);
+        keywords.add(word);
+      }
+    });
+  });
+  
+  // Add action keywords
+  Object.keys(comprehensiveDictionary.actions).forEach(action => {
+    comprehensiveDictionary.actions[action].forEach(word => {
+      if (text.toLowerCase().includes(word)) {
+        keywords.add(action);
+        keywords.add(word);
+      }
+    });
+  });
+  
+  // Convert to array and limit to 10 keywords
+  return Array.from(keywords).slice(0, 10);
 }
 
 // Fuse.js options for fuzzy search on tasks
@@ -43,60 +172,186 @@ function searchTasks(tasks, pattern) {
   return fuse.search(pattern).map(result => result.item);
 }
 
-// Function to generate AI suggestions based on user input
+// Enhanced function to generate comprehensive AI suggestions
 function generateAISuggestions(input, existingTasks = []) {
   const suggestions = [];
   const doc = nlp(input.toLowerCase());
-
-  // Common task patterns and their suggestions
+  const inputLower = input.toLowerCase();
+  
+  // Comprehensive task patterns with extensive variations
   const taskPatterns = {
+    // Communication patterns
     'meeting': [
-      { title: 'Schedule team meeting', description: 'Organize and schedule a team meeting to discuss project updates', tags: ['meeting', 'team', 'planning'], priority: 'Medium' },
-      { title: 'Prepare meeting agenda', description: 'Create agenda and talking points for upcoming meeting', tags: ['meeting', 'preparation', 'agenda'], priority: 'High' }
+      { title: 'Schedule team meeting', description: 'Organize and schedule a team meeting to discuss project updates and collaboration', tags: ['meeting', 'team', 'planning', 'collaboration'], priority: 'Medium' },
+      { title: 'Prepare meeting agenda', description: 'Create comprehensive agenda and talking points for upcoming meeting', tags: ['meeting', 'preparation', 'agenda', 'planning'], priority: 'High' },
+      { title: 'Send meeting invitations', description: 'Distribute meeting invitations with calendar invites and details', tags: ['meeting', 'invitation', 'calendar', 'communication'], priority: 'Medium' },
+      { title: 'Follow up on meeting action items', description: 'Review meeting notes and follow up on assigned action items', tags: ['meeting', 'follow-up', 'action-items', 'accountability'], priority: 'High' }
     ],
+    
     'email': [
-      { title: 'Send follow-up email', description: 'Send follow-up email to client or team member', tags: ['email', 'communication', 'follow-up'], priority: 'Medium' },
-      { title: 'Check inbox', description: 'Review and respond to important emails', tags: ['email', 'communication', 'inbox'], priority: 'High' }
+      { title: 'Send follow-up email', description: 'Compose and send follow-up email to client or team member', tags: ['email', 'communication', 'follow-up', 'client'], priority: 'Medium' },
+      { title: 'Check and respond to inbox', description: 'Review and respond to important emails in inbox', tags: ['email', 'communication', 'inbox', 'response'], priority: 'High' },
+      { title: 'Draft important email', description: 'Compose important email communication for stakeholders', tags: ['email', 'draft', 'communication', 'stakeholders'], priority: 'Medium' },
+      { title: 'Organize email folders', description: 'Clean up and organize email folders for better productivity', tags: ['email', 'organization', 'productivity', 'cleanup'], priority: 'Low' }
     ],
-    'project': [
-      { title: 'Update project status', description: 'Update project progress and share with stakeholders', tags: ['project', 'status', 'update'], priority: 'High' },
-      { title: 'Review project timeline', description: 'Review project milestones and deadlines', tags: ['project', 'timeline', 'review'], priority: 'Medium' }
-    ],
-    'code': [
-      { title: 'Code review', description: 'Review code changes and provide feedback', tags: ['code', 'review', 'development'], priority: 'High' },
-      { title: 'Fix bug', description: 'Identify and fix software bug', tags: ['code', 'bug', 'fix'], priority: 'High' }
-    ],
-    'report': [
-      { title: 'Generate weekly report', description: 'Create and send weekly progress report', tags: ['report', 'weekly', 'progress'], priority: 'Medium' },
-      { title: 'Update documentation', description: 'Update project documentation and guides', tags: ['documentation', 'update', 'guide'], priority: 'Low' }
-    ],
+    
     'call': [
-      { title: 'Schedule phone call', description: 'Schedule important phone call or video conference', tags: ['call', 'phone', 'schedule'], priority: 'Medium' },
-      { title: 'Return missed calls', description: 'Return missed calls and follow up on messages', tags: ['call', 'follow-up', 'communication'], priority: 'High' }
+      { title: 'Schedule important phone call', description: 'Schedule critical phone call or video conference', tags: ['call', 'phone', 'schedule', 'video'], priority: 'Medium' },
+      { title: 'Return missed calls', description: 'Return missed calls and follow up on messages', tags: ['call', 'follow-up', 'communication', 'response'], priority: 'High' },
+      { title: 'Prepare for client call', description: 'Research and prepare talking points for client call', tags: ['call', 'client', 'preparation', 'research'], priority: 'High' }
+    ],
+    
+    // Project management patterns
+    'project': [
+      { title: 'Update project status', description: 'Update project progress and share comprehensive status with stakeholders', tags: ['project', 'status', 'update', 'stakeholders'], priority: 'High' },
+      { title: 'Review project timeline', description: 'Review project milestones, deadlines, and resource allocation', tags: ['project', 'timeline', 'review', 'milestones'], priority: 'Medium' },
+      { title: 'Conduct project retrospective', description: 'Analyze project outcomes and identify lessons learned', tags: ['project', 'retrospective', 'analysis', 'lessons-learned'], priority: 'Medium' },
+      { title: 'Create project documentation', description: 'Develop comprehensive project documentation and guidelines', tags: ['project', 'documentation', 'guidelines', 'process'], priority: 'Low' }
+    ],
+    
+    // Technology patterns
+    'code': [
+      { title: 'Code review session', description: 'Conduct thorough code review and provide constructive feedback', tags: ['code', 'review', 'development', 'feedback'], priority: 'High' },
+      { title: 'Fix critical bug', description: 'Identify, analyze, and resolve software bug affecting functionality', tags: ['code', 'bug', 'fix', 'debugging'], priority: 'High' },
+      { title: 'Refactor legacy code', description: 'Improve code structure and maintainability through refactoring', tags: ['code', 'refactor', 'maintainability', 'improvement'], priority: 'Medium' },
+      { title: 'Write unit tests', description: 'Develop comprehensive unit tests for code coverage', tags: ['code', 'testing', 'unit-tests', 'coverage'], priority: 'Medium' }
+    ],
+    
+    'development': [
+      { title: 'Set up development environment', description: 'Configure development tools and environment for new project', tags: ['development', 'environment', 'setup', 'configuration'], priority: 'High' },
+      { title: 'Implement new feature', description: 'Design and implement new feature based on requirements', tags: ['development', 'feature', 'implementation', 'requirements'], priority: 'High' },
+      { title: 'Optimize application performance', description: 'Analyze and improve application performance and efficiency', tags: ['development', 'optimization', 'performance', 'efficiency'], priority: 'Medium' }
+    ],
+    
+    // Business patterns
+    'report': [
+      { title: 'Generate weekly progress report', description: 'Create comprehensive weekly progress report for stakeholders', tags: ['report', 'weekly', 'progress', 'stakeholders'], priority: 'Medium' },
+      { title: 'Update project documentation', description: 'Update and maintain project documentation and user guides', tags: ['documentation', 'update', 'guide', 'maintenance'], priority: 'Low' },
+      { title: 'Create financial summary', description: 'Prepare financial summary and budget analysis report', tags: ['report', 'financial', 'budget', 'analysis'], priority: 'High' }
+    ],
+    
+    'analysis': [
+      { title: 'Conduct market research', description: 'Research market trends and competitive landscape analysis', tags: ['analysis', 'market-research', 'competitive', 'trends'], priority: 'High' },
+      { title: 'Analyze user feedback', description: 'Review and analyze user feedback for product improvements', tags: ['analysis', 'user-feedback', 'product', 'improvement'], priority: 'Medium' },
+      { title: 'Performance metrics review', description: 'Analyze key performance indicators and business metrics', tags: ['analysis', 'metrics', 'performance', 'kpi'], priority: 'High' }
+    ],
+    
+    // Creative patterns
+    'design': [
+      { title: 'Create wireframes', description: 'Design wireframes and user interface mockups', tags: ['design', 'wireframes', 'ui', 'mockups'], priority: 'High' },
+      { title: 'Design user experience flow', description: 'Map out user experience journey and interaction flows', tags: ['design', 'ux', 'user-experience', 'flow'], priority: 'High' },
+      { title: 'Brand identity development', description: 'Develop comprehensive brand identity and visual guidelines', tags: ['design', 'brand', 'identity', 'guidelines'], priority: 'Medium' }
+    ],
+    
+    // Learning patterns
+    'learning': [
+      { title: 'Complete online course', description: 'Finish assigned online course and submit final project', tags: ['learning', 'course', 'education', 'completion'], priority: 'Medium' },
+      { title: 'Read industry articles', description: 'Read and analyze latest industry articles and trends', tags: ['learning', 'research', 'industry', 'trends'], priority: 'Low' },
+      { title: 'Practice new skill', description: 'Dedicate time to practice and improve new technical skill', tags: ['learning', 'practice', 'skill-development', 'improvement'], priority: 'Medium' }
+    ],
+    
+    // Health and wellness patterns
+    'health': [
+      { title: 'Schedule medical appointment', description: 'Book and prepare for upcoming medical appointment', tags: ['health', 'medical', 'appointment', 'wellness'], priority: 'High' },
+      { title: 'Exercise routine', description: 'Complete daily exercise routine and physical activity', tags: ['health', 'exercise', 'fitness', 'routine'], priority: 'Medium' },
+      { title: 'Mental health check-in', description: 'Take time for mental health assessment and self-care', tags: ['health', 'mental-health', 'self-care', 'wellness'], priority: 'High' }
     ]
   };
 
-  // Check for keywords in user input
+  // Enhanced pattern matching with synonyms and variations
   for (const [keyword, tasks] of Object.entries(taskPatterns)) {
-    if (doc.has(keyword) || input.toLowerCase().includes(keyword)) {
+    // Check direct keyword match
+    if (doc.has(keyword) || inputLower.includes(keyword)) {
       suggestions.push(...tasks);
     }
-  }
-
-  // If no specific patterns match, generate generic suggestions based on input
-  if (suggestions.length === 0) {
-    const priority = analyzeTaskPriority(input, '');
-    const tags = extractKeywords(input);
-    suggestions.push({
-      title: input.charAt(0).toUpperCase() + input.slice(1),
-      description: `Complete task: ${input}`,
-      tags: tags.length > 0 ? tags : ['task'],
-      priority: priority
+    
+    // Check for related terms in comprehensive dictionary
+    Object.keys(comprehensiveDictionary.actions).forEach(action => {
+      if (comprehensiveDictionary.actions[action].some(synonym => 
+        inputLower.includes(synonym) || doc.has(synonym))) {
+        if (keyword === 'code' || keyword === 'development') {
+          suggestions.push(...tasks);
+        }
+      }
+    });
+    
+    // Check domain-specific matches
+    Object.keys(comprehensiveDictionary.domains).forEach(domain => {
+      if (comprehensiveDictionary.domains[domain].some(term => 
+        inputLower.includes(term) || doc.has(term))) {
+        if (keyword === 'analysis' || keyword === 'project') {
+          suggestions.push(...tasks);
+        }
+      }
     });
   }
 
-  // Limit to 5 suggestions and ensure variety
-  return suggestions.slice(0, 5);
+  // Generate contextual suggestions based on existing tasks
+  if (existingTasks.length > 0) {
+    const recentTasks = existingTasks.slice(0, 5);
+    recentTasks.forEach(task => {
+      if (task.tags && task.tags.length > 0) {
+        task.tags.forEach(tag => {
+          if (inputLower.includes(tag)) {
+            suggestions.push({
+              title: `Follow up on ${task.title}`,
+              description: `Continue work on related task: ${task.title}`,
+              tags: [...task.tags, 'follow-up'],
+              priority: task.priority || 'Medium'
+            });
+          }
+        });
+      }
+    });
+  }
+
+  // Generate intelligent suggestions based on input analysis
+  if (suggestions.length === 0) {
+    const priority = analyzeTaskPriority(input, '');
+    const tags = extractKeywords(input);
+    
+    // Generate contextual suggestions based on detected patterns
+    const detectedActions = [];
+    Object.keys(comprehensiveDictionary.actions).forEach(action => {
+      if (comprehensiveDictionary.actions[action].some(word => inputLower.includes(word))) {
+        detectedActions.push(action);
+      }
+    });
+    
+    const detectedDomains = [];
+    Object.keys(comprehensiveDictionary.domains).forEach(domain => {
+      if (comprehensiveDictionary.domains[domain].some(word => inputLower.includes(word))) {
+        detectedDomains.push(domain);
+      }
+    });
+    
+    // Create intelligent suggestions
+    suggestions.push({
+      title: input.charAt(0).toUpperCase() + input.slice(1),
+      description: `Complete task: ${input}. Focus on ${detectedActions.join(', ') || 'execution'} in ${detectedDomains.join(', ') || 'general'} context.`,
+      tags: tags.length > 0 ? tags : ['task', ...detectedActions, ...detectedDomains],
+      priority: priority
+    });
+    
+    // Add related suggestions
+    if (detectedActions.length > 0) {
+      detectedActions.forEach(action => {
+        suggestions.push({
+          title: `Plan ${action} strategy`,
+          description: `Develop comprehensive strategy for ${action} implementation`,
+          tags: [action, 'strategy', 'planning'],
+          priority: 'Medium'
+        });
+      });
+    }
+  }
+
+  // Remove duplicates and limit to 8 suggestions
+  const uniqueSuggestions = suggestions.filter((suggestion, index, self) =>
+    index === self.findIndex(s => s.title === suggestion.title)
+  );
+  
+  return uniqueSuggestions.slice(0, 8);
 }
 
 // Function to generate AI description suggestions based on task title
@@ -754,14 +1009,239 @@ function generateAIDescription(title) {
   return description;
 }
 
+// Advanced context-aware task generation
+function generateContextualTasks(userInput, existingTasks = [], userProfile = {}) {
+  const suggestions = generateAISuggestions(userInput, existingTasks);
+  const contextualTasks = [];
+  
+  // Analyze user patterns from existing tasks
+  const userPatterns = analyzeUserPatterns(existingTasks);
+  
+  // Generate personalized suggestions based on patterns
+  suggestions.forEach(suggestion => {
+    const contextualTask = {
+      ...suggestion,
+      // Add contextual enhancements
+      estimatedDuration: estimateTaskDuration(suggestion.title, suggestion.description),
+      difficulty: assessTaskDifficulty(suggestion.title, suggestion.description),
+      category: categorizeTask(suggestion.title, suggestion.tags),
+      relatedTasks: findRelatedTasks(suggestion, existingTasks),
+      prerequisites: identifyPrerequisites(suggestion.title, suggestion.description),
+      suggestedDeadline: suggestDeadline(suggestion.priority, userPatterns),
+      motivation: generateMotivation(suggestion.title, userProfile)
+    };
+    contextualTasks.push(contextualTask);
+  });
+  
+  return contextualTasks;
+}
+
+// Analyze user patterns from existing tasks
+function analyzeUserPatterns(tasks) {
+  const patterns = {
+    preferredPriority: 'Medium',
+    commonTags: [],
+    averageTaskLength: 0,
+    preferredCategories: [],
+    workingHours: { start: 9, end: 17 },
+    productivityPeak: 'morning'
+  };
+  
+  if (tasks.length === 0) return patterns;
+  
+  // Analyze priority preferences
+  const priorityCounts = tasks.reduce((acc, task) => {
+    acc[task.priority] = (acc[task.priority] || 0) + 1;
+    return acc;
+  }, {});
+  patterns.preferredPriority = Object.keys(priorityCounts).reduce((a, b) => 
+    priorityCounts[a] > priorityCounts[b] ? a : b
+  );
+  
+  // Analyze common tags
+  const allTags = tasks.flatMap(task => task.tags || []);
+  const tagCounts = allTags.reduce((acc, tag) => {
+    acc[tag] = (acc[tag] || 0) + 1;
+    return acc;
+  }, {});
+  patterns.commonTags = Object.keys(tagCounts)
+    .sort((a, b) => tagCounts[b] - tagCounts[a])
+    .slice(0, 10);
+  
+  // Analyze task length patterns
+  const taskLengths = tasks.map(task => task.title.length + (task.description || '').length);
+  patterns.averageTaskLength = taskLengths.reduce((a, b) => a + b, 0) / taskLengths.length;
+  
+  return patterns;
+}
+
+// Estimate task duration based on complexity
+function estimateTaskDuration(title, description) {
+  const text = (title + ' ' + description).toLowerCase();
+  const complexity = text.split(' ').length;
+  const urgentWords = ['urgent', 'asap', 'immediately', 'critical', 'emergency'];
+  const isUrgent = urgentWords.some(word => text.includes(word));
+  
+  if (isUrgent) return '15-30 minutes';
+  if (complexity < 10) return '30-60 minutes';
+  if (complexity < 20) return '1-2 hours';
+  if (complexity < 30) return '2-4 hours';
+  return '4+ hours';
+}
+
+// Assess task difficulty
+function assessTaskDifficulty(title, description) {
+  const text = (title + ' ' + description).toLowerCase();
+  const difficultyWords = {
+    easy: ['simple', 'basic', 'quick', 'easy', 'straightforward'],
+    medium: ['moderate', 'standard', 'regular', 'normal'],
+    hard: ['complex', 'advanced', 'difficult', 'challenging', 'sophisticated']
+  };
+  
+  for (const [level, words] of Object.entries(difficultyWords)) {
+    if (words.some(word => text.includes(word))) {
+      return level;
+    }
+  }
+  return 'medium';
+}
+
+// Categorize task based on content
+function categorizeTask(title, tags) {
+  const text = title.toLowerCase();
+  const categories = {
+    'communication': ['email', 'call', 'meeting', 'message', 'chat'],
+    'development': ['code', 'programming', 'development', 'software', 'bug'],
+    'planning': ['plan', 'schedule', 'organize', 'prepare', 'strategy'],
+    'analysis': ['analyze', 'review', 'research', 'study', 'investigate'],
+    'creative': ['design', 'create', 'artistic', 'visual', 'creative'],
+    'administrative': ['document', 'file', 'organize', 'manage', 'admin']
+  };
+  
+  for (const [category, keywords] of Object.entries(categories)) {
+    if (keywords.some(keyword => text.includes(keyword))) {
+      return category;
+    }
+  }
+  return 'general';
+}
+
+// Find related tasks
+function findRelatedTasks(suggestion, existingTasks) {
+  const suggestionTags = suggestion.tags || [];
+  return existingTasks.filter(task => {
+    const taskTags = task.tags || [];
+    return suggestionTags.some(tag => taskTags.includes(tag));
+  }).slice(0, 3);
+}
+
+// Identify prerequisites
+function identifyPrerequisites(title, description) {
+  const text = (title + ' ' + description).toLowerCase();
+  const prerequisites = [];
+  
+  if (text.includes('review') || text.includes('analyze')) {
+    prerequisites.push('Gather relevant data and materials');
+  }
+  if (text.includes('present') || text.includes('meeting')) {
+    prerequisites.push('Prepare presentation materials');
+  }
+  if (text.includes('implement') || text.includes('develop')) {
+    prerequisites.push('Review requirements and specifications');
+  }
+  if (text.includes('test') || text.includes('validate')) {
+    prerequisites.push('Ensure test environment is ready');
+  }
+  
+  return prerequisites;
+}
+
+// Suggest deadline based on priority and patterns
+function suggestDeadline(priority, patterns) {
+  const now = new Date();
+  const suggestions = {
+    'High': 1, // 1 day
+    'Medium': 3, // 3 days
+    'Low': 7 // 1 week
+  };
+  
+  const days = suggestions[priority] || 3;
+  const deadline = new Date(now.getTime() + (days * 24 * 60 * 60 * 1000));
+  return deadline.toISOString().split('T')[0];
+}
+
+// Generate motivation message
+function generateMotivation(title, userProfile) {
+  const motivations = [
+    `You've got this! "${title}" is within your capabilities.`,
+    `Every expert was once a beginner. Tackle "${title}" with confidence!`,
+    `Progress, not perfection. Start working on "${title}" today.`,
+    `The best time to plant a tree was 20 years ago. The second best time is now. Start "${title}".`,
+    `Success is the sum of small efforts repeated day in and day out. Begin with "${title}".`
+  ];
+  
+  return motivations[Math.floor(Math.random() * motivations.length)];
+}
+
+// Enhanced search with semantic understanding
+function enhancedSearch(tasks, query) {
+  const fuse = new Fuse(tasks, {
+    keys: ['title', 'description', 'tags'],
+    threshold: 0.4,
+    includeScore: true,
+    includeMatches: true
+  });
+  
+  const results = fuse.search(query);
+  
+  // Enhance results with semantic analysis
+  return results.map(result => ({
+    ...result.item,
+    relevanceScore: 1 - result.score,
+    matchedFields: result.matches.map(match => match.key),
+    semanticTags: extractKeywords(query)
+  }));
+}
+
+// Generate task templates based on category
+function generateTaskTemplates(category) {
+  const templates = {
+    'communication': [
+      { title: 'Send follow-up email to [person]', description: 'Compose and send follow-up email regarding [topic]', tags: ['email', 'follow-up', 'communication'] },
+      { title: 'Schedule meeting with [team]', description: 'Organize meeting to discuss [agenda items]', tags: ['meeting', 'scheduling', 'team'] },
+      { title: 'Prepare presentation for [audience]', description: 'Create presentation covering [key points]', tags: ['presentation', 'preparation', 'communication'] }
+    ],
+    'development': [
+      { title: 'Implement [feature] functionality', description: 'Develop and test [feature] according to specifications', tags: ['development', 'implementation', 'feature'] },
+      { title: 'Fix bug in [component]', description: 'Identify and resolve bug affecting [functionality]', tags: ['bug-fix', 'debugging', 'maintenance'] },
+      { title: 'Code review for [module]', description: 'Review code changes and provide feedback for [module]', tags: ['code-review', 'quality-assurance', 'collaboration'] }
+    ],
+    'planning': [
+      { title: 'Create project timeline for [project]', description: 'Develop comprehensive timeline with milestones for [project]', tags: ['planning', 'timeline', 'project-management'] },
+      { title: 'Organize [event/meeting] logistics', description: 'Coordinate all aspects of [event/meeting] planning', tags: ['organization', 'logistics', 'event-planning'] },
+      { title: 'Draft strategy for [initiative]', description: 'Develop strategic approach for [initiative] implementation', tags: ['strategy', 'planning', 'initiative'] }
+    ]
+  };
+  
+  return templates[category] || [];
+}
+
 function generateAllFromTitle(title, description = '') {
   const priority = analyzeTaskPriority(title, description);
   const tags = extractKeywords(title + ' ' + description);
   const descriptionGenerated = generateAIDescription(title);
+  const category = categorizeTask(title, tags);
+  const difficulty = assessTaskDifficulty(title, description);
+  const estimatedDuration = estimateTaskDuration(title, description);
+  
   return {
     priority,
     tags,
     description: descriptionGenerated,
+    category,
+    difficulty,
+    estimatedDuration,
+    suggestedDeadline: suggestDeadline(priority, {})
   };
 }
 
@@ -773,5 +1253,17 @@ module.exports = {
   generateAISuggestions,
   generateAIDescription,
   generateAllFromTitle,
+  generateContextualTasks,
+  analyzeUserPatterns,
+  estimateTaskDuration,
+  assessTaskDifficulty,
+  categorizeTask,
+  findRelatedTasks,
+  identifyPrerequisites,
+  suggestDeadline,
+  generateMotivation,
+  enhancedSearch,
+  generateTaskTemplates,
+  comprehensiveDictionary
 };
     

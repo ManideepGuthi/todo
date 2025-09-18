@@ -1,18 +1,9 @@
-# TODO: Improve AI Generation for Tasks
+# TODO: Make Add Task Modal Responsive
 
-## Overview
-Enhance the task creation process to generate description, tags, and priority simultaneously with smooth animations for AI generation.
-
-## Tasks
-- [x] Fix navbar consistency across dashboard, connect, and profile pages
-- [ ] Modify add task routes in index.js to generate description if not provided
-- [ ] Add new API endpoint `/api/ai/generate-all` to generate description, tags, priority at once
-- [ ] Update ai-service.js to include combined generation function
-- [ ] Add loading animations and UI feedback in dashboard.ejs
-- [ ] Update styles.css with new animation keyframes
-- [ ] Test the functionality and ensure smooth animations
-- [ ] Verify all three fields are generated correctly
-
-## Status
-- Planning phase complete
-- Ready to implement changes
+## Steps to Complete
+- [ ] Analyze current modal structure and existing responsive styles in views/dashboard.ejs
+- [ ] Add enhanced responsive CSS rules for the material-modal class across different breakpoints (mobile, tablet, desktop)
+- [ ] Ensure modal content stacks properly on small screens, adjust padding, margins, and font sizes
+- [ ] Make modal full-screen or nearly full-screen on very small devices for better usability
+- [ ] Test the modal responsiveness using browser developer tools or by running the application
+- [ ] Verify that form inputs, buttons, and labels are readable and usable on all device sizes

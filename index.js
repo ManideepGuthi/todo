@@ -166,14 +166,19 @@ app.get("/dashboard", isAuthenticated, async (req, res) => {
     
     // Fetch shared tasks sent by the current user
     const sentTasks = await SharedTask.find({ sender: req.session.user.id }).populate('receiver', 'name');
+
+    // Fetch shared tasks received by the current user
+    const receivedTasks = await SharedTask.find({ receiver: req.session.user.id }).populate('sender', 'name');
     
     res.render("dashboard", {
       tasks,
       sentTasks,
+      receivedTasks,
       rooms, // Pass the rooms to the template
       search: search || "",
       filterBy: filterBy || "",
       sortBy: sortBy || "",
+      aiEnabledPreference: req.session.aiEnabledPreference !== undefined ? req.session.aiEnabledPreference : true, // Pass AI preference
     });
   } catch (err) {
     console.error(err);
@@ -181,33 +186,51 @@ app.get("/dashboard", isAuthenticated, async (req, res) => {
   }
 });
 
-// Add normal task
 app.post("/tasks/add", isAuthenticated, async (req, res) => {
   try {
-    let { title, description, tags, priority, room } = req.body;
+    let { title, description, tags, priority, room, aiEnabled } = req.body;
+    req.session.aiEnabledPreference = aiEnabled === 'true'; // Store AI preference in session
     const taskTags = tags ? tags.split(",").map((t) => t.trim()) : [];
 
-    // Use AI service to generate description if not provided
-    if (!description || description.trim() === '') {
+    // If AI is disabled and only title is provided, save task with only title
+    if (aiEnabled === 'false' && (!description || description.trim() === '') && taskTags.length === 0 && (!priority || priority === 'Low')) {
+      await Task.create({
+        title,
+        user: req.session.user.id,
+        status: "pending",
+        room: room || null,
+      });
+      return res.redirect("/dashboard");
+    }
+
+    // Use AI service to generate description if not provided and AI is enabled
+    if (aiEnabled === 'true' && (!description || description.trim() === '')) {
       description = generateAIDescription(title);
     }
 
     // Use AI service to analyze priority if not provided or set to default
     let analyzedPriority = priority;
-    if (!priority || priority === 'Low') {
-      analyzedPriority = analyzeTaskPriority(title, description);
+    if (aiEnabled === 'true') {
+      if (!priority || priority === 'Low') {
+        analyzedPriority = analyzeTaskPriority(title, description);
+      }
+    } else {
+      // If AI is disabled, and no priority is provided by the user, set it to null
+      if (!priority || priority === 'Low') {
+        analyzedPriority = null;
+      }
     }
 
-    // Use AI service to extract keywords for tags if no tags provided
+    // Use AI service to extract keywords for tags if no tags provided and AI is enabled
     let finalTags = taskTags;
-    if (taskTags.length === 0) {
+    if (aiEnabled === 'true' && taskTags.length === 0) {
       finalTags = extractKeywords(title + ' ' + description);
     }
 
     await Task.create({
       title,
-      description,
-      tags: finalTags,
+      description: aiEnabled === 'true' ? description : (description || ''),
+      tags: aiEnabled === 'true' ? finalTags : taskTags,
       priority: analyzedPriority,
       user: req.session.user.id,
       status: "pending",
@@ -221,30 +244,49 @@ app.post("/tasks/add", isAuthenticated, async (req, res) => {
   }
 });
 
-// Add deadline task
 app.post(
   "/tasks/add-deadline",
   isAuthenticated,
   upload.single("attachment"),
   async (req, res) => {
     try {
-      let { title, description, tags, priority, deadline, room } = req.body;
+      let { title, description, tags, priority, deadline, room, aiEnabled } = req.body;
+      req.session.aiEnabledPreference = aiEnabled === 'true'; // Store AI preference in session
       const taskTags = tags ? tags.split(",").map((t) => t.trim()) : [];
 
+      // If AI is disabled and only title is provided, save task with only title
+      if (aiEnabled === 'false' && (!description || description.trim() === '') && taskTags.length === 0 && (!priority || priority === 'Low')) {
+        await Task.create({
+          title,
+          user: req.session.user.id,
+          status: "pending",
+          room: room || null,
+          deadline: deadline ? new Date(deadline) : null,
+        });
+        return res.redirect("/dashboard");
+      }
+
       // Use AI service to generate description if not provided
-      if (!description || description.trim() === '') {
+      if (aiEnabled === 'true' && (!description || description.trim() === '')) {
         description = generateAIDescription(title);
       }
 
       // Use AI service to analyze priority if not provided or set to default
       let analyzedPriority = priority;
-      if (!priority || priority === 'Low') {
-        analyzedPriority = analyzeTaskPriority(title, description);
+      if (aiEnabled === 'true') {
+        if (!priority || priority === 'Low') {
+          analyzedPriority = analyzeTaskPriority(title, description);
+        }
+      } else {
+        // If AI is disabled, and no priority is provided by the user, set it to null
+        if (!priority || priority === 'Low') {
+          analyzedPriority = null;
+        }
       }
 
       // Use AI service to extract keywords for tags if no tags provided
       let finalTags = taskTags;
-      if (taskTags.length === 0) {
+      if (aiEnabled === 'true' && taskTags.length === 0) {
         finalTags = extractKeywords(title + ' ' + description);
       }
 
@@ -259,8 +301,8 @@ app.post(
 
       await Task.create({
         title,
-        description,
-        tags: finalTags,
+        description: aiEnabled === 'true' ? description : (description || ''),
+        tags: aiEnabled === 'true' ? finalTags : taskTags,
         priority: analyzedPriority,
         deadline: deadline ? new Date(deadline) : null,
         attachment,
@@ -277,55 +319,7 @@ app.post(
   }
 );
 // Add deadline task
-app.post(
-  "/tasks/add-deadline",
-  isAuthenticated,
-  upload.single("attachment"),
-  async (req, res) => {
-    try {
-      const { title, description, tags, priority, deadline, room } = req.body;
-      const taskTags = tags ? tags.split(",").map((t) => t.trim()) : [];
-
-      // Use AI service to analyze priority if not provided or set to default
-      let analyzedPriority = priority;
-      if (!priority || priority === 'Low') {
-        analyzedPriority = analyzeTaskPriority(title, description);
-      }
-
-      // Use AI service to extract keywords for tags if no tags provided
-      let finalTags = taskTags;
-      if (taskTags.length === 0) {
-        finalTags = extractKeywords(title + ' ' + description);
-      }
-
-      let attachment = null;
-      if (req.file) {
-        attachment = {
-          fileName: req.file.originalname,
-          filePath: `/uploads/${req.file.filename}`,
-          mimetype: req.file.mimetype,
-        };
-      }
-
-      await Task.create({
-        title,
-        description,
-        tags: finalTags,
-        priority: analyzedPriority,
-        deadline: deadline ? new Date(deadline) : null,
-        attachment,
-        user: req.session.user.id,
-        status: "pending",
-        room: room || null, // Assign the room ID if provided
-      });
-
-      res.redirect("/dashboard");
-    } catch (err) {
-      console.error(err);
-      res.send("Error adding deadline task");
-    }
-  }
-);
+// Removed duplicate "/tasks/add-deadline" route (consolidated above)
 
 // Edit task
 app.post("/tasks/edit/:id", isAuthenticated, async (req, res) => {
@@ -772,7 +766,7 @@ app.post("/rooms/delete/:roomName", isAuthenticated, async (req, res) => {
 });
 
 // Add shared task
-app.post("/rooms/add-shared-task", isAuthenticated, upload.single('attachment'), async (req, res) => {
+app.post("/rooms/add-shared-task", isAuthenticated, upload.single('media'), async (req, res) => {
   try {
     const { roomName, task, deadline } = req.body;
     const sender = req.session.user.id;
@@ -850,6 +844,18 @@ app.post("/rooms/edit-shared-task/:id", isAuthenticated, async (req, res) => {
   }
 });
 
+// Mark shared task as complete
+app.post("/rooms/complete-shared-task/:id", isAuthenticated, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await SharedTask.findByIdAndUpdate(id, { completed: true, completedAt: new Date() });
+    res.redirect("/dashboard");
+  } catch (err) {
+    console.error("Error completing shared task:", err);
+    res.send("Error completing shared task");
+  }
+});
+
 // Delete shared task
 app.post("/rooms/delete-shared-task/:id", isAuthenticated, async (req, res) => {
   try {
@@ -880,6 +886,18 @@ app.post("/rooms/delete-shared-task/:id", isAuthenticated, async (req, res) => {
   }
 });
 
+// Decline/Delete received shared task
+app.post("/rooms/decline-shared-task/:id", isAuthenticated, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await SharedTask.findByIdAndDelete(id);
+    res.redirect("/dashboard");
+  } catch (err) {
+    console.error("Error declining shared task:", err);
+    res.send("Error declining shared task");
+  }
+});
+
 // Accept shared task
 app.post("/rooms/accept-task/:id", isAuthenticated, async (req, res) => {
   try {
@@ -898,45 +916,21 @@ app.post("/rooms/accept-task/:id", isAuthenticated, async (req, res) => {
     const tasks = await SharedTask.find({ roomName: sharedTask.roomName }).populate('sender', 'name').populate('receiver', 'name');
     io.to(sharedTask.roomName).emit('task update', tasks);
     
-    // Notify chat that the task was accepted
+    // Fetch sender's profile picture for the chat message
+    const sender = await User.findById(req.session.user.id);
+    const profilePicture = sender ? sender.profilePicture : '/images/default-avatar.png';
+
     io.to(sharedTask.roomName).emit('chat message', {
-      username: 'System',
-      message: `${req.session.user.name} has accepted the task: "${sharedTask.task}".`,
-      isSystem: true
+      username: req.session.user.name,
+      message: `Task "${sharedTask.task}" has been accepted by ${req.session.user.name}.`,
+      isSystem: true,
+      profilePicture, // Include profile picture
     });
 
     res.redirect("/dashboard");
   } catch (err) {
     console.error(err);
     res.status(500).send("Error accepting task");
-  }
-});
-
-// Decline shared task
-app.post("/rooms/decline-task/:id", isAuthenticated, async (req, res) => {
-  try {
-    const sharedTask = await SharedTask.findById(req.params.id);
-    if (!sharedTask) {
-      return res.status(404).send("Task not found");
-    }
-
-    const roomName = sharedTask.roomName;
-    
-    await sharedTask.deleteOne();
-    
-    const tasks = await SharedTask.find({ roomName }).populate('sender', 'name').populate('receiver', 'name');
-    io.to(roomName).emit('task update', tasks);
-
-    io.to(roomName).emit('chat message', {
-      username: 'System',
-      message: `${req.session.user.name} has declined the task: "${sharedTask.task}".`,
-      isSystem: true
-    });
-    
-    res.redirect("/dashboard");
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Error declining task");
   }
 });
 
@@ -959,10 +953,14 @@ app.post("/rooms/complete-shared-task/:id", isAuthenticated, async (req, res) =>
     io.to(sharedTask.roomName).emit('task update', tasks);
     
     // Notify chat that the task was completed
+    const sender = await User.findById(req.session.user.id);
+    const profilePicture = sender ? sender.profilePicture : '/images/default-avatar.png';
+
     io.to(sharedTask.roomName).emit('chat message', {
-      username: 'System',
+      username: req.session.user.name,
       message: `${req.session.user.name} has completed the task: "${sharedTask.task}".`,
-      isSystem: true
+      isSystem: true,
+      profilePicture, // Include profile picture
     });
 
     res.redirect("/dashboard");
@@ -1070,22 +1068,30 @@ io.on("connection", (socket) => {
 
   socket.on("chat message", async (data) => {
     const { room, message, username, userId } = data;
-    const newMessage = new Message({
-      roomName: room,
-      username,
-      message,
-      userId,
-      isSystem: false
-    });
-    await newMessage.save();
+    try {
+      // Save message to DB
+      const chatMessage = new Message({
+        roomName: room,
+        sender: userId,
+        username,
+        message,
+      });
+      await chatMessage.save();
 
-    io.to(room).emit("chat message", {
-      room,
-      message,
-      username,
-      userId,
-      isSystem: false
-    });
+      // Fetch sender's profile picture
+      const sender = await User.findById(userId);
+      const profilePicture = sender ? sender.profilePicture : '/images/default-avatar.png';
+
+      io.to(room).emit("chat message", {
+        room,
+        message,
+        username,
+        userId,
+        profilePicture, // Include profile picture
+      });
+    } catch (err) {
+      console.error("Error saving chat message:", err);
+    }
   });
 
   socket.on("disconnect", async () => {

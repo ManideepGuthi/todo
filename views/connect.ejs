@@ -67,10 +67,11 @@
       .chat-section {
         display: flex;
         flex-direction: column;
-        min-height: 70vh;
+        min-height: calc(100vh - 180px); /* Make chat section take more height */
+        flex: 1; /* Allow chat section to grow */
       }
       .chat-box {
-        flex: 1;
+        flex: 1; /* Allow chat box to take available space */
         overflow-y: auto;
         border: 1px solid var(--border-color);
         padding: 1rem;
@@ -79,25 +80,23 @@
         display: flex;
         flex-direction: column;
         gap: 0.5rem;
-        max-height: 400px;
       }
       .chat-message {
         padding: 0.75rem 1rem;
         border-radius: 18px;
-        max-width: 70%;
+        max-width: 100%; /* Allow it to take full width of its flex container */
         word-wrap: break-word;
+        white-space: normal; /* Allow normal white-space handling */
         font-size: 14px;
         line-height: 1.4;
         margin-bottom: 0.25rem;
       }
       .message-sent {
-        align-self: flex-end;
         background: var(--primary-color);
         color: #fff;
         border-bottom-right-radius: 5px;
       }
       .message-received {
-        align-self: flex-start;
         background: #e9ecef;
         color: var(--text-color);
         border-bottom-left-radius: 5px;
@@ -212,6 +211,60 @@
         font-size: 0.75rem;
         color: var(--light-text-color);
       }
+      .chat-message-container {
+        display: flex;
+        align-items: flex-start; /* Align avatar and message to the top */
+        gap: 0.5rem;
+      }
+      .chat-message-container.sent {
+        flex-direction: row-reverse; /* Reverse order for sent messages */
+        align-self: flex-end; /* Align sent messages to the right */
+      }
+      .chat-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        object-fit: cover;
+        background-color: #ccc;
+      }
+      .chat-avatar-icon {
+        font-size: 24px; /* Adjust size to match avatar */
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        background-color: #e0e0e0; /* Light background for the icon */
+        color: #757575; /* Darker color for the icon itself */
+      }
+      .chat-message-content {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start; /* Default for received messages */
+        max-width: calc(100% - 42px); /* Account for avatar width + gap (32px + 10px) */
+      }
+      .chat-message-container.sent .chat-message-content {
+        align-items: flex-end; /* Align content to the right for sent messages */
+      }
+      .chat-username {
+        font-size: 0.75rem;
+        color: var(--light-text-color);
+        margin-bottom: 0.2rem;
+        padding-left: 0.5rem; /* Add padding for received messages */
+      }
+      .chat-message-container.sent .chat-username {
+        text-align: right;
+        padding-right: 0.5rem; /* Add padding for sent messages */
+        padding-left: 0; 
+      }
+      .chat-message.message-sent + .chat-username {
+        text-align: right;
+      }
+      /* Hide broken image icons */
+      .chat-avatar:error {
+        display: none;
+      }
     </style>
   </head>
   <body>
@@ -306,6 +359,7 @@
 
     <%- include('./partials/footer.ejs') %>
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script>
       // Helpers
@@ -493,8 +547,25 @@
           }
           el.textContent = data.message;
         } else {
-          el.className = 'chat-message ' + (data.userId === CURRENT_USER_ID ? 'message-sent' : 'message-received');
-          el.innerHTML = escapeHtml(data.message);
+          const isCurrentUser = data.userId === CURRENT_USER_ID;
+          const messageClass = isCurrentUser ? 'message-sent' : 'message-received';
+          const avatarUrl = data.profilePicture || '/images/default-avatar.png'; // Default avatar
+
+          let avatarHtml;
+          if (avatarUrl === '/images/default-avatar.png') {
+            avatarHtml = '<i class="fas fa-user-circle chat-avatar-icon"></i>';
+          } else {
+            avatarHtml = `<img src="${avatarUrl}" alt="Avatar" class="chat-avatar">`;
+          }
+
+          el.className = `chat-message-container ${isCurrentUser ? 'sent' : ''}`;
+          el.innerHTML = `
+            ${avatarHtml}
+            <div class="chat-message-content">
+              <span class="chat-username">${escapeHtml(data.username)}</span>
+              <div class="chat-message ${messageClass}">${escapeHtml(data.message)}</div>
+            </div>
+          `;
         }
         chatBox.appendChild(el);
         chatBox.scrollTop = chatBox.scrollHeight;
